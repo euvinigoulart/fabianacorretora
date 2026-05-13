@@ -454,10 +454,22 @@ export default function Admin() {
             </div>
 
             <div className="col-span-2 grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <input required type="number" placeholder="Quartos" value={formData.beds || ''} onChange={e=>setFormData({...formData,beds:Number(e.target.value)})} className="p-3 bg-black border border-white/10" />
-              <input required type="number" placeholder="Suítes" value={formData.baths || ''} onChange={e=>setFormData({...formData,baths:Number(e.target.value)})} className="p-3 bg-black border border-white/10" />
-              <input type="number" placeholder="Banheiros" value={formData.bathrooms || ''} onChange={e=>setFormData({...formData,bathrooms:Number(e.target.value)})} className="p-3 bg-black border border-white/10" />
-              <input type="number" placeholder="Vagas de Garagem" value={formData.garages || ''} onChange={e=>setFormData({...formData,garages:Number(e.target.value)})} className="p-3 bg-black border border-white/10" />
+              <div>
+                <label className="text-sm text-neutral-400 block mb-2">Quartos</label>
+                <input required type="number" placeholder="Ex: 2" value={formData.beds === 0 ? 0 : formData.beds || ''} onChange={e=>setFormData({...formData,beds:Number(e.target.value)})} className="p-3 bg-black border border-white/10 w-full" />
+              </div>
+              <div>
+                <label className="text-sm text-neutral-400 block mb-2">Suítes</label>
+                <input type="number" placeholder="Ex: 1" value={formData.baths === 0 ? 0 : formData.baths || ''} onChange={e=>setFormData({...formData,baths:Number(e.target.value)})} className="p-3 bg-black border border-white/10 w-full" />
+              </div>
+              <div>
+                <label className="text-sm text-neutral-400 block mb-2">Banheiros</label>
+                <input type="number" placeholder="Ex: 2" value={formData.bathrooms === 0 ? 0 : formData.bathrooms || ''} onChange={e=>setFormData({...formData,bathrooms:Number(e.target.value)})} className="p-3 bg-black border border-white/10 w-full" />
+              </div>
+              <div>
+                <label className="text-sm text-neutral-400 block mb-2">Vagas de Garagem</label>
+                <input type="number" placeholder="Ex: 1" value={formData.garages === 0 ? 0 : formData.garages || ''} onChange={e=>setFormData({...formData,garages:Number(e.target.value)})} className="p-3 bg-black border border-white/10 w-full" />
+              </div>
             </div>
 
             <div className="col-span-2 flex gap-6 text-sm text-neutral-400 my-2">

@@ -16,6 +16,8 @@ export default function Home() {
   const [footerLogoImg, setFooterLogoImg] = useState<string>('');
   const [profileImg, setProfileImg] = useState<string>('');
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [appliedSearchTerm, setAppliedSearchTerm] = useState('');
 
   const carouselTexts = [
     "Até 100% de financiamento",
@@ -44,8 +46,16 @@ export default function Home() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const salesProperties = properties.filter(p => p.type === 'sale');
-  const rentalProperties = properties.filter(p => p.type === 'rental');
+  const filteredProperties = properties.filter(p => {
+    if (!appliedSearchTerm) return true;
+    const term = appliedSearchTerm.toLowerCase();
+    return p.title.toLowerCase().includes(term) || 
+           p.location.toLowerCase().includes(term) || 
+           (p.description && p.description.toLowerCase().includes(term));
+  });
+
+  const salesProperties = filteredProperties.filter(p => p.type === 'sale');
+  const rentalProperties = filteredProperties.filter(p => p.type === 'rental');
 
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-gold-500 selection:text-black">
@@ -142,11 +152,24 @@ export default function Home() {
               <MapPin className="text-gold-500 w-5 h-5 mr-3" />
               <input
                 type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    setAppliedSearchTerm(searchTerm);
+                    document.getElementById('venda')?.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}
                 placeholder="Buscar por bairro, condomínio ou referência..."
                 className="w-full bg-transparent text-white placeholder-neutral-500 outline-none text-sm font-light h-10 md:h-12"
               />
             </div>
-            <button className="bg-gold-500 hover:bg-gold-600 text-black px-8 py-3 md:py-0 h-10 md:h-12 font-medium uppercase tracking-wider text-sm transition-colors flex items-center justify-center gap-2">
+            <button 
+              onClick={() => {
+                setAppliedSearchTerm(searchTerm);
+                document.getElementById('venda')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="bg-gold-500 hover:bg-gold-600 text-black px-8 py-3 md:py-0 h-10 md:h-12 font-medium uppercase tracking-wider text-sm transition-colors flex items-center justify-center gap-2">
               <Search size={18} />
               <span>Buscar</span>
             </button>
