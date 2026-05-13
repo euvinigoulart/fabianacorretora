@@ -42,16 +42,17 @@ export default function Admin() {
     }
   }, [isAuthenticated]);
 
-  const handleWatermarkUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleWatermarkUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        localStorage.setItem('aurum_watermark_image', reader.result as string);
-        setWatermarkImg(reader.result as string);
+      try {
+        const resized = await resizeImage(file, false);
+        localStorage.setItem('aurum_watermark_image', resized);
+        setWatermarkImg(resized);
         alert("Marca d'água atualizada com sucesso!");
-      };
-      reader.readAsDataURL(file);
+      } catch(e: any) {
+        alert("Erro ao salvar imagem. O armazenamento local pode estar cheio.");
+      }
     }
   };
 
@@ -60,16 +61,17 @@ export default function Admin() {
     setWatermarkImg('');
   };
 
-  const handleHeroUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleHeroUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        localStorage.setItem('aurum_hero_image', reader.result as string);
-        setHeroImg(reader.result as string);
+      try {
+        const resized = await resizeImage(file, false);
+        localStorage.setItem('aurum_hero_image', resized);
+        setHeroImg(resized);
         alert("Imagem de fundo da tela inicial atualizada com sucesso!");
-      };
-      reader.readAsDataURL(file);
+      } catch(e: any) {
+        alert("Erro ao salvar imagem. O armazenamento local pode estar cheio.");
+      }
     }
   };
 
@@ -78,16 +80,17 @@ export default function Admin() {
     setHeroImg('');
   };
 
-  const handleAboutUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAboutUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        localStorage.setItem('aurum_about_image', reader.result as string);
-        setAboutImg(reader.result as string);
+      try {
+        const resized = await resizeImage(file, false);
+        localStorage.setItem('aurum_about_image', resized);
+        setAboutImg(resized);
         alert("Imagem da seção Sobre atualizada com sucesso!");
-      };
-      reader.readAsDataURL(file);
+      } catch(e: any) {
+        alert("Erro ao salvar imagem. O armazenamento local pode estar cheio.");
+      }
     }
   };
 
@@ -96,16 +99,17 @@ export default function Admin() {
     setAboutImg('');
   };
 
-  const handleCtaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCtaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        localStorage.setItem('aurum_cta_image', reader.result as string);
-        setCtaImg(reader.result as string);
+      try {
+        const resized = await resizeImage(file, false);
+        localStorage.setItem('aurum_cta_image', resized);
+        setCtaImg(resized);
         alert("Imagem de fundo do Contato atualizada com sucesso!");
-      };
-      reader.readAsDataURL(file);
+      } catch(e: any) {
+        alert("Erro ao salvar imagem. O armazenamento local pode estar cheio.");
+      }
     }
   };
 
@@ -114,16 +118,17 @@ export default function Admin() {
     setCtaImg('');
   };
 
-  const handleFooterLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFooterLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        localStorage.setItem('aurum_footer_logo', reader.result as string);
-        setFooterLogoImg(reader.result as string);
+      try {
+        const resized = await resizeImage(file, false);
+        localStorage.setItem('aurum_footer_logo', resized);
+        setFooterLogoImg(resized);
         alert("Logo do rodapé atualizada com sucesso!");
-      };
-      reader.readAsDataURL(file);
+      } catch(e: any) {
+        alert("Erro ao salvar imagem. O armazenamento local pode estar cheio.");
+      }
     }
   };
 
@@ -132,16 +137,17 @@ export default function Admin() {
     setFooterLogoImg('');
   };
 
-  const handleProfileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleProfileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        localStorage.setItem('aurum_profile_image', reader.result as string);
-        setProfileImg(reader.result as string);
+      try {
+        const resized = await resizeImage(file, false);
+        localStorage.setItem('aurum_profile_image', resized);
+        setProfileImg(resized);
         alert("Foto de perfil atualizada com sucesso!");
-      };
-      reader.readAsDataURL(file);
+      } catch(e: any) {
+        alert("Erro ao salvar imagem. O armazenamento local pode estar cheio.");
+      }
     }
   };
 
@@ -178,7 +184,7 @@ export default function Admin() {
     }
   };
 
-  const resizeImage = (file: File): Promise<string> => {
+  const resizeImage = (file: File, applyWatermark: boolean = true): Promise<string> => {
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -207,7 +213,10 @@ export default function Admin() {
           ctx?.drawImage(img, 0, 0, width, height);
 
           const watermarkData = localStorage.getItem('aurum_watermark_image');
-          if (watermarkData && ctx) {
+          const outputFormat = file.type === 'image/png' ? 'image/png' : 'image/webp';
+          const quality = 0.7;
+
+          if (applyWatermark && watermarkData && ctx) {
             const wmImg = new Image();
             wmImg.onload = () => {
               ctx.globalAlpha = 0.6;
@@ -216,14 +225,14 @@ export default function Admin() {
               const padding = 20;
               ctx.drawImage(wmImg, width - wmWidth - padding, height - wmHeight - padding, wmWidth, wmHeight);
               ctx.globalAlpha = 1.0;
-              resolve(canvas.toDataURL('image/jpeg', 0.6));
+              resolve(canvas.toDataURL(outputFormat, quality));
             };
             wmImg.onerror = () => {
-              resolve(canvas.toDataURL('image/jpeg', 0.6));
+              resolve(canvas.toDataURL(outputFormat, quality));
             };
             wmImg.src = watermarkData;
           } else {
-            resolve(canvas.toDataURL('image/jpeg', 0.6));
+            resolve(canvas.toDataURL(outputFormat, quality));
           }
         };
         img.src = e.target?.result as string;
