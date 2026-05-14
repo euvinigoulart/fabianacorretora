@@ -3,14 +3,10 @@ import { Property } from './types';
 export const subscribeToProperties = (callback: (properties: Property[]) => void) => {
   const fetchProps = async () => {
     try {
-      // Usamos timestamp para evitar que o Netlify faça cache do arquivo
-      const res = await fetch(`/database.json?t=${new Date().getTime()}`);
+      const res = await fetch(`/api/data`);
       if (res.ok) {
-        const contentType = res.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-          const data = await res.json();
-          callback(data.properties || []);
-        }
+        const data = await res.json();
+        callback(data.properties || []);
       }
     } catch (e) {
       console.error(e);
@@ -28,13 +24,10 @@ export const subscribeToProperties = (callback: (properties: Property[]) => void
 export const subscribeToSettings = (callback: (settings: any) => void) => {
   const fetchSettings = async () => {
     try {
-      const res = await fetch(`/database.json?t=${new Date().getTime()}`);
+      const res = await fetch(`/api/data`);
       if (res.ok) {
-        const contentType = res.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-          const data = await res.json();
-          callback(data.settings || {});
-        }
+        const data = await res.json();
+        callback(data.settings || {});
       }
     } catch (e) {
       console.error(e);
