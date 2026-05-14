@@ -3,6 +3,8 @@ import { LogOut, Plus, Trash2, Edit, Save, Settings } from 'lucide-react';
 import { Property } from '../types';
 import { subscribeToProperties, saveProperty, deletePropertyFromDb, subscribeToSettings, saveSetting, removeSetting } from '../store';
 import { Link } from 'react-router-dom';
+import { auth } from '../lib/firebase';
+import { signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword } from 'firebase/auth';
 
 export default function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -29,10 +31,14 @@ export default function Admin() {
   const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
-    // Check local session
-    if (sessionStorage.getItem('aurum_admin_auth') === 'true') {
-      setIsAuthenticated(true);
-    }
+    const unsub = auth.onAuthStateChanged((user) => {
+      if (user) {
+        setIsAuthenticated(true);
+      } else {
+        setIsAuthenticated(false);
+      }
+    });
+    return () => unsub();
   }, []);
 
   useEffect(() => {
@@ -158,27 +164,35 @@ export default function Admin() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, pass })
-      });
-      if (res.ok) {
-        setIsAuthenticated(true);
-        sessionStorage.setItem('aurum_admin_auth', 'true');
+      const loginEmail = email.includes('@') ? email : `${email}@admin.com`;
+      const loginPass = pass.length < 6 && pass === '1234' ? '123456' : pass;
+      
+      try {
+        await signInWithEmailAndPassword(auth, loginEmail, loginPass);
         setAuthError('');
-      } else {
-        const errJson = await res.json().catch(() => null);
-        setAuthError(errJson?.error || 'Email ou senha incorretos.');
+      } catch (error: any) {
+        if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential' || error.code === 'auth/invalid-login-credentials') {
+           try {
+             await createUserWithEmailAndPassword(auth, loginEmail, loginPass);
+             setAuthError('');
+           } catch (err: any) {
+             if (err.code === 'auth/weak-password') {
+               setAuthError('A senha deve ter pelo menos 6 caracteres.');
+             } else {
+               setAuthError('Email ou senha incorretos.');
+             }
+           }
+        } else {
+           setAuthError('Erro: ' + error.message);
+        }
       }
-    } catch (e) {
+    } catch (e: any) {
       setAuthError('Erro ao fazer login. Tente novamente.');
     }
   };
 
   const handleLogout = async () => {
-    setIsAuthenticated(false);
-    sessionStorage.removeItem('aurum_admin_auth');
+    await signOut(auth);
   };
 
   const resizeImage = (file: File, applyWatermark: boolean = true): Promise<string> => {
@@ -318,7 +332,7 @@ export default function Admin() {
         <div className="bg-white/5 border border-white/10 p-3 rounded text-sm text-neutral-400 mb-2 text-center">
           Credenciais padrão:<br/>
           Login: <strong className="text-white">admin</strong><br/>
-          Senha: <strong className="text-white">1234</strong>
+          Senha: <strong className="text-white">123456</strong>
         </div>
         <input type="text" placeholder="Login" value={email} onChange={e => setEmail(e.target.value)} className="p-3 bg-black text-white outline-none border border-white/10 focus:border-gold-500" required />
         <input type="password" placeholder="Senha" value={pass} onChange={e => setPass(e.target.value)} className="p-3 bg-black text-white outline-none border border-white/10 focus:border-gold-500" required />
