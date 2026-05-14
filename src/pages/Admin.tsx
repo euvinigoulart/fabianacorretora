@@ -157,12 +157,21 @@ export default function Admin() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email === 'admin@admin.com' && pass === '1234') {
-      setIsAuthenticated(true);
-      sessionStorage.setItem('aurum_admin_auth', 'true');
-      setAuthError('');
-    } else {
-      setAuthError('Email ou senha incorretos. (padrão: admin@admin.com / 1234)');
+    try {
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, pass })
+      });
+      if (res.ok) {
+        setIsAuthenticated(true);
+        sessionStorage.setItem('aurum_admin_auth', 'true');
+        setAuthError('');
+      } else {
+        setAuthError('Email ou senha incorretos.');
+      }
+    } catch (e) {
+      setAuthError('Erro ao fazer login. Tente novamente.');
     }
   };
 
@@ -199,7 +208,7 @@ export default function Admin() {
           const ctx = canvas.getContext('2d');
           ctx?.drawImage(img, 0, 0, width, height);
 
-          const watermarkData = localStorage.getItem('aurum_watermark_image');
+          const watermarkData = watermarkImg;
           const outputFormat = 'image/webp';
           const quality = 0.3;
 
@@ -400,6 +409,34 @@ export default function Admin() {
                 )}
               </div>
               <p className="text-xs text-neutral-500 mt-2">Dica: Envie uma imagem com fundo transparente (PNG) ou branco. Será aplicada automaticamente nas novas fotos cadastradas.</p>
+              
+              <div className="pt-8 mt-8 border-t border-white/10">
+                <h4 className="text-gold-500 font-serif mb-4 flex items-center gap-2"><Settings size={18}/> Credenciais de Acesso</h4>
+                <div className="flex gap-4 mb-4">
+                  <div className="flex-1">
+                    <label className="text-sm text-neutral-400 block mb-2">Novo Email de Acesso</label>
+                    <input type="email" id="newAdminEmail" placeholder="admin@admin.com" className="p-3 border border-white/10 bg-black text-sm w-full outline-none focus:border-gold-500" />
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-sm text-neutral-400 block mb-2">Nova Senha</label>
+                    <input type="password" id="newAdminPass" placeholder="Nova Senha" className="p-3 border border-white/10 bg-black text-sm w-full outline-none focus:border-gold-500" />
+                  </div>
+                </div>
+                <button onClick={async () => {
+                  const elEmail = document.getElementById('newAdminEmail') as HTMLInputElement;
+                  const elPass = document.getElementById('newAdminPass') as HTMLInputElement;
+                  let changed = false;
+                  if (elEmail.value) { await saveSetting('adminEmail', elEmail.value); changed = true; }
+                  if (elPass.value) { await saveSetting('adminPass', elPass.value); changed = true; }
+                  if (changed) {
+                    alert('Credenciais atualizadas com sucesso! Por favor faça login novamente.');
+                    sessionStorage.removeItem('aurum_admin_auth');
+                    window.location.reload();
+                  } else {
+                    alert('Preencha pelo menos um campo para atualizar.');
+                  }
+                }} type="button" className="px-6 py-2 bg-gold-500 text-black text-sm font-medium hover:bg-gold-400 flex items-center gap-2"><Save size={16}/> Atualizar Credenciais</button>
+              </div>
             </div>
           </div>
         )}
@@ -482,8 +519,8 @@ export default function Admin() {
             </select>
             <div className="col-span-2 flex justify-end gap-3 mt-4">
               <button type="button" onClick={resetForm} className="px-6 py-2 border border-white/20 text-neutral-400">Cancelar</button>
-              <button type="submit" disabled={isUploading} className="px-6 py-2 bg-gold-500 text-black disabled:opacity-50">
-                {isUploading ? 'Processando fotos...' : 'Salvar Imóvel'}
+              <button type="submit" disabled={isUploading} className="px-6 py-2 bg-gold-500 text-black font-medium disabled:opacity-50 flex items-center justify-center gap-2 hover:bg-gold-400 transition-colors">
+                {isUploading ? 'Processando fotos...' : <><Save size={18} /> Salvar Imóvel</>}
               </button>
             </div>
           </form>

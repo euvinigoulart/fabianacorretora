@@ -43,6 +43,19 @@ async function startServer() {
     res.json(readDb());
   });
 
+  app.post('/api/login', (req, res) => {
+    const { email, pass } = req.body;
+    const db = readDb();
+    const adminEmail = db.settings.adminEmail || 'admin@admin.com';
+    const adminPass = db.settings.adminPass || '1234';
+    
+    if (email === adminEmail && pass === adminPass) {
+      res.json({ success: true, token: 'validated' });
+    } else {
+      res.status(401).json({ error: 'Credenciais inválidas' });
+    }
+  });
+
   app.post('/api/properties', (req, res) => {
     const property = req.body;
     const db = readDb();
