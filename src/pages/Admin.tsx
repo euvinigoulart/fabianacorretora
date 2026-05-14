@@ -314,7 +314,7 @@ export default function Admin() {
     <div className="min-h-screen bg-[#050505] flex justify-center items-center">
       <form onSubmit={handleLogin} className="w-96 p-8 bg-[#0a0a0a] border border-white/10 flex flex-col gap-4">
         <h2 className="text-2xl text-white font-serif text-center mb-4">Acesso Restrito</h2>
-        <input type="email" placeholder="Email do administrador" value={email} onChange={e => setEmail(e.target.value)} className="p-3 bg-black text-white outline-none border border-white/10 focus:border-gold-500" required />
+        <input type="text" placeholder="Login" value={email} onChange={e => setEmail(e.target.value)} className="p-3 bg-black text-white outline-none border border-white/10 focus:border-gold-500" required />
         <input type="password" placeholder="Senha" value={pass} onChange={e => setPass(e.target.value)} className="p-3 bg-black text-white outline-none border border-white/10 focus:border-gold-500" required />
         {authError && <p className="text-red-500 text-sm text-center">{authError}</p>}
         <button type="submit" className="mt-2 p-3 bg-gold-500 text-black uppercase font-medium">Acessar Sistema</button>
@@ -414,8 +414,8 @@ export default function Admin() {
                 <h4 className="text-gold-500 font-serif mb-4 flex items-center gap-2"><Settings size={18}/> Credenciais de Acesso</h4>
                 <div className="flex gap-4 mb-4">
                   <div className="flex-1">
-                    <label className="text-sm text-neutral-400 block mb-2">Novo Email de Acesso</label>
-                    <input type="email" id="newAdminEmail" placeholder="admin@admin.com" className="p-3 border border-white/10 bg-black text-sm w-full outline-none focus:border-gold-500" />
+                    <label className="text-sm text-neutral-400 block mb-2">Novo Login de Acesso</label>
+                    <input type="text" id="newAdminEmail" placeholder="admin" className="p-3 border border-white/10 bg-black text-sm w-full outline-none focus:border-gold-500" />
                   </div>
                   <div className="flex-1">
                     <label className="text-sm text-neutral-400 block mb-2">Nova Senha</label>

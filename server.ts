@@ -46,7 +46,7 @@ async function startServer() {
   app.post('/api/login', (req, res) => {
     const { email, pass } = req.body;
     const db = readDb();
-    const adminEmail = db.settings.adminEmail || 'admin@admin.com';
+    const adminEmail = db.settings.adminEmail || 'admin';
     const adminPass = db.settings.adminPass || '1234';
     
     if (email?.trim().toLowerCase() === adminEmail.toLowerCase() && pass === adminPass) {
