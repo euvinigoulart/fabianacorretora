@@ -4,7 +4,7 @@ import { Property } from '../types';
 import { subscribeToProperties, saveProperty, deletePropertyFromDb, subscribeToSettings, saveSetting, removeSetting } from '../store';
 import { Link } from 'react-router-dom';
 import { auth } from '../lib/firebase';
-import { signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword } from 'firebase/auth';
+import { signInWithCustomToken, signOut, onAuthStateChanged } from 'firebase/auth';
 
 export default function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -164,27 +164,27 @@ export default function Admin() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const loginEmail = email.includes('@') ? email : `${email}@admin.com`;
-      const loginPass = pass.length < 6 && pass === '1234' ? '123456' : pass;
-      
-      try {
-        await signInWithEmailAndPassword(auth, loginEmail, loginPass);
-        setAuthError('');
-      } catch (error: any) {
-        if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential' || error.code === 'auth/invalid-login-credentials') {
-           try {
-             await createUserWithEmailAndPassword(auth, loginEmail, loginPass);
-             setAuthError('');
-           } catch (err: any) {
-             if (err.code === 'auth/weak-password') {
-               setAuthError('A senha deve ter pelo menos 6 caracteres.');
-             } else {
-               setAuthError('Email ou senha incorretos.');
-             }
-           }
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, pass })
+      });
+      if (res.ok) {
+        const body = await res.json();
+        if (body.token === 'validated') {
+          // Fallback if no firebase set up properly on server
+          setIsAuthenticated(true);
         } else {
-           setAuthError('Erro: ' + error.message);
+          try {
+            await signInWithCustomToken(auth, body.token);
+            setAuthError('');
+          } catch(err: any) {
+            setAuthError('Erro na autenticação Firebase: ' + err.message);
+          }
         }
+      } else {
+        const errJson = await res.json().catch(() => null);
+        setAuthError(errJson?.error || 'Email ou senha incorretos.');
       }
     } catch (e: any) {
       setAuthError('Erro ao fazer login. Tente novamente.');
