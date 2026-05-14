@@ -1,60 +1,32 @@
 import { Property } from './types';
+import { db } from './lib/firebase';
+import { collection, doc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
 
 export const subscribeToProperties = (callback: (properties: Property[]) => void) => {
-  const fetchProps = async () => {
-    try {
-      const res = await fetch(`/api/data`);
-      if (res.ok) {
-        const data = await res.json();
-        callback(data.properties || []);
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  fetchProps();
-  const intervalId = setInterval(fetchProps, 2000);
-
-  return () => {
-    clearInterval(intervalId);
-  };
+  const unsubscribe = onSnapshot(collection(db, 'properties'), (snapshot) => {
+    const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }) as Property);
+    callback(data);
+  }, (err) => {
+    console.error("Error subscribing to properties:", err);
+  });
+  return unsubscribe;
 };
 
 export const subscribeToSettings = (callback: (settings: any) => void) => {
-  const fetchSettings = async () => {
-    try {
-      const res = await fetch(`/api/data`);
-      if (res.ok) {
-        const data = await res.json();
-        callback(data.settings || {});
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  fetchSettings();
-  const intervalId = setInterval(fetchSettings, 2000);
-
-  return () => {
-    clearInterval(intervalId);
-  };
+  const unsubscribe = onSnapshot(doc(db, 'config', 'settings'), (snapshot) => {
+    const data = snapshot.exists() ? snapshot.data() : {};
+    callback(data);
+  }, (err) => {
+    console.error("Error subscribing to settings:", err);
+  });
+  return unsubscribe;
 };
 
 export const saveProperty = async (property: Property): Promise<boolean> => {
   try {
-    const res = await fetch('/api/properties', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(property)
-    });
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`HTTP error! status: ${res.status} - ${text}`);
-    }
+    const propId = String(property.id || Date.now());
+    const propRef = doc(db, 'properties', propId);
+    await setDoc(propRef, { ...property, id: propId });
     return true;
   } catch (e: any) {
     alert("Erro ao salvar imóvel: " + e.message);
@@ -64,9 +36,7 @@ export const saveProperty = async (property: Property): Promise<boolean> => {
 
 export const deletePropertyFromDb = async (id: string | number) => {
   try {
-    await fetch(`/api/properties/${id}`, {
-      method: 'DELETE'
-    });
+    await deleteDoc(doc(db, 'properties', String(id)));
   } catch (e: any) {
     console.error(e);
   }
@@ -74,17 +44,9 @@ export const deletePropertyFromDb = async (id: string | number) => {
 
 export const saveSetting = async (key: string, value: string) => {
   try {
-    const res = await fetch('/api/settings', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ [key]: value })
-    });
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`HTTP error! status: ${res.status} - ${text}`);
-    }
+    await setDoc(doc(db, 'config', 'settings'), {
+      [key]: value
+    }, { merge: true });
   } catch (e: any) {
     console.error(e);
     alert("Erro ao salvar a configuração: " + e.message);
@@ -93,13 +55,9 @@ export const saveSetting = async (key: string, value: string) => {
 
 export const removeSetting = async (key: string) => {
   try {
-    await fetch('/api/settings', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ [key]: '' })
-    });
+    await setDoc(doc(db, 'config', 'settings'), {
+      [key]: ''
+    }, { merge: true });
   } catch (e) {
     console.error(e);
   }
