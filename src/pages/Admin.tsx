@@ -174,8 +174,13 @@ export default function Admin() {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
       setAuthError('');
-    } catch (err) {
-      setAuthError('Erro ao fazer login. Tente novamente.');
+    } catch (err: any) {
+      console.error(err);
+      if (err.code === 'auth/popup-blocked') {
+        setAuthError('Pop-up bloqueado. Por favor, permita pop-ups ou abra em nova aba.');
+      } else {
+        setAuthError(`Erro: ${err.message || 'Tente novamente.'}`);
+      }
     }
   };
 
