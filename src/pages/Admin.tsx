@@ -318,7 +318,7 @@ export default function Admin() {
         <div className="bg-white/5 border border-white/10 p-3 rounded text-sm text-neutral-400 mb-2 text-center">
           Credenciais padrão:<br/>
           Login: <strong className="text-white">admin</strong><br/>
-          Senha: <strong className="text-white">1234</strong>
+          Senha: <strong className="text-white">1234</strong> ou <strong className="text-white">123456</strong>
         </div>
         <input type="text" placeholder="Login" value={email} onChange={e => setEmail(e.target.value)} className="p-3 bg-black text-white outline-none border border-white/10 focus:border-gold-500" required />
         <input type="password" placeholder="Senha" value={pass} onChange={e => setPass(e.target.value)} className="p-3 bg-black text-white outline-none border border-white/10 focus:border-gold-500" required />

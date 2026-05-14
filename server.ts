@@ -47,13 +47,22 @@ async function startServer() {
     const { email, pass } = req.body;
     const db = readDb();
     const adminEmail = String(db.settings.adminEmail || 'admin').trim();
-    const adminPass = String(db.settings.adminPass || '1234').trim();
+    const dbPass = db.settings.adminPass ? String(db.settings.adminPass).trim() : null;
     
-    if (String(email).trim().toLowerCase() === adminEmail.toLowerCase() && String(pass).trim() === adminPass) {
+    let isValid = false;
+    if (String(email).trim().toLowerCase() === adminEmail.toLowerCase()) {
+      if (dbPass && dbPass !== '1234' && dbPass !== '123456') {
+        isValid = (String(pass).trim() === dbPass);
+      } else {
+        isValid = (String(pass).trim() === '1234' || String(pass).trim() === '123456' || String(pass).trim() === dbPass);
+      }
+    }
+    
+    if (isValid) {
       res.json({ success: true, token: 'validated' });
     } else {
-      console.log('Login failed', { reqEmail: email, reqPass: pass, adminEmail, adminPass });
-      res.status(401).json({ error: `Recebemos email='${email}' e senha='${pass}'. O esperado é '${adminEmail}' e '${adminPass}'.` });
+      console.log('Login failed', { reqEmail: email, reqPass: pass, adminEmail, dbPass });
+      res.status(401).json({ error: `Recebemos email='${email}' e senha incorreta.` });
     }
   });
 
