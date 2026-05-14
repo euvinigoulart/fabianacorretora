@@ -2,19 +2,33 @@ import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import fs from 'fs';
-import { initializeApp } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
-import { getAuth } from 'firebase-admin/auth';
 
-let firestore: any = null;
-let adminAuth: any = null;
-try {
-  const config = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'firebase-applet-config.json'), 'utf-8'));
-  const app = initializeApp();
-  firestore = getFirestore(app, config.firestoreDatabaseId);
-  adminAuth = getAuth(app);
-} catch (e) {
-  console.error('Firebase Admin init error:', e);
+const DB_FILE = path.join(process.cwd(), 'database.json');
+
+// Initialize database
+if (!fs.existsSync(DB_FILE)) {
+  fs.writeFileSync(DB_FILE, JSON.stringify({ properties: [], settings: {} }));
+}
+
+let memoryDb: any = null;
+
+function readDb() {
+  if (memoryDb) return memoryDb;
+  try {
+    memoryDb = JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
+  } catch (e) {
+    memoryDb = { properties: [], settings: {} };
+  }
+  return memoryDb;
+}
+
+function writeDb(data: any) {
+  memoryDb = data;
+  try {
+    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
+  } catch (e) {
+    console.error("Failed to write to DB", e);
+  }
 }
 
 async function startServer() {
@@ -25,34 +39,55 @@ async function startServer() {
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-  app.post('/api/login', async (req, res) => {
-    try {
-      const { email, pass } = req.body;
-      let settings: any = {};
-      if (firestore) {
-        const settingsSnap = await firestore.collection('config').doc('settings').get();
-        if (settingsSnap.exists) {
-          settings = settingsSnap.data() || {};
-        }
-      }
-      
-      const adminEmail = String(settings.adminEmail || 'admin').trim();
-      const adminPass = String(settings.adminPass || '123456').trim();
-      
-      if (String(email).trim().toLowerCase() === adminEmail.toLowerCase() && String(pass).trim() === adminPass) {
-        if (adminAuth) {
-          const customToken = await adminAuth.createCustomToken('admin-uid');
-          res.json({ success: true, token: customToken });
-        } else {
-          res.json({ success: true, token: 'validated' });
-        }
-      } else {
-        res.status(401).json({ error: 'Email ou senha incorretos.' });
-      }
-    } catch (e) {
-      console.error(e);
-      res.status(500).json({ error: 'Login check failed' });
+  app.get('/api/data', (req, res) => {
+    res.json(readDb());
+  });
+
+  app.post('/api/login', (req, res) => {
+    const { email, pass } = req.body;
+    const db = readDb();
+    const adminEmail = String(db.settings?.adminEmail || 'admin').trim();
+    const adminPass = String(db.settings?.adminPass || '123456').trim();
+    
+    if (String(email).trim().toLowerCase() === adminEmail.toLowerCase() && String(pass).trim() === adminPass) {
+      res.json({ success: true, token: 'validated' });
+    } else {
+      res.status(401).json({ error: 'Email ou senha incorretos.' });
     }
+  });
+
+  app.post('/api/properties', (req, res) => {
+    const property = req.body;
+    const db = readDb();
+    
+    if (!property.id) {
+      property.id = Date.now().toString();
+    }
+    
+    const existingIndex = db.properties.findIndex((p: any) => String(p.id) === String(property.id));
+    if (existingIndex >= 0) {
+      db.properties[existingIndex] = property;
+    } else {
+      db.properties.push(property);
+    }
+    writeDb(db);
+    res.json({ success: true, property });
+  });
+
+  app.delete('/api/properties/:id', (req, res) => {
+    const { id } = req.params;
+    const db = readDb();
+    db.properties = db.properties.filter((p: any) => String(p.id) !== String(id));
+    writeDb(db);
+    res.json({ success: true });
+  });
+
+  app.post('/api/settings', (req, res) => {
+    const newSettings = req.body;
+    const db = readDb();
+    db.settings = { ...db.settings, ...newSettings };
+    writeDb(db);
+    res.json({ success: true });
   });
 
   if (process.env.NODE_ENV !== 'production') {
