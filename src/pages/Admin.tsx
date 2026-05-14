@@ -168,7 +168,8 @@ export default function Admin() {
         sessionStorage.setItem('aurum_admin_auth', 'true');
         setAuthError('');
       } else {
-        setAuthError('Email ou senha incorretos.');
+        const errJson = await res.json().catch(() => null);
+        setAuthError(errJson?.error || 'Email ou senha incorretos.');
       }
     } catch (e) {
       setAuthError('Erro ao fazer login. Tente novamente.');

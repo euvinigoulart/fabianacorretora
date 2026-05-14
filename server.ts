@@ -53,7 +53,7 @@ async function startServer() {
       res.json({ success: true, token: 'validated' });
     } else {
       console.log('Login failed', { reqEmail: email, reqPass: pass, adminEmail, adminPass });
-      res.status(401).json({ error: 'Credenciais inválidas' });
+      res.status(401).json({ error: `Recebemos email='${email}' e senha='${pass}'. O esperado é '${adminEmail}' e '${adminPass}'.` });
     }
   });
 
