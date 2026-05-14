@@ -10,16 +10,25 @@ if (!fs.existsSync(DB_FILE)) {
   fs.writeFileSync(DB_FILE, JSON.stringify({ properties: [], settings: {} }));
 }
 
+let memoryDb: any = null;
+
 function readDb() {
+  if (memoryDb) return memoryDb;
   try {
-    return JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
+    memoryDb = JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
   } catch (e) {
-    return { properties: [], settings: {} };
+    memoryDb = { properties: [], settings: {} };
   }
+  return memoryDb;
 }
 
 function writeDb(data: any) {
-  fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
+  memoryDb = data;
+  try {
+    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
+  } catch (e) {
+    console.error("Failed to write to DB", e);
+  }
 }
 
 async function startServer() {

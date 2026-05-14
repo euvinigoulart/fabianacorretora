@@ -189,7 +189,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
             <div>
-               <p className="text-gold-500 uppercase tracking-[0.2em] text-xs font-semibold mb-3">Curadoria Exclusiva</p>
+               <p className="text-gold-500 uppercase tracking-[0.2em] text-xs font-semibold mb-3">Portfólio Exclusivo</p>
                <h2 className="font-serif text-4xl md:text-5xl font-light">Imóveis à Venda</h2>
             </div>
           </div>
@@ -207,7 +207,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
             <div>
-               <p className="text-gold-500 uppercase tracking-[0.2em] text-xs font-semibold mb-3">Longa Duração</p>
+               <p className="text-gold-500 uppercase tracking-[0.2em] text-xs font-semibold mb-3">Melhores Opções de Aluguel</p>
                <h2 className="font-serif text-4xl md:text-5xl font-light">Imóveis para Alocação</h2>
             </div>
           </div>

@@ -51,9 +51,13 @@ export const saveProperty = async (property: Property): Promise<boolean> => {
       },
       body: JSON.stringify(property)
     });
-    return res.ok;
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`HTTP error! status: ${res.status} - ${text}`);
+    }
+    return true;
   } catch (e: any) {
-    alert("Erro ao salvar imóvel. Limite de tamanho pode ter sido excedido.");
+    alert("Erro ao salvar imóvel: " + e.message);
     return false;
   }
 };
@@ -70,16 +74,20 @@ export const deletePropertyFromDb = async (id: string | number) => {
 
 export const saveSetting = async (key: string, value: string) => {
   try {
-    await fetch('/api/settings', {
+    const res = await fetch('/api/settings', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ [key]: value })
     });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`HTTP error! status: ${res.status} - ${text}`);
+    }
   } catch (e: any) {
     console.error(e);
-    alert("Erro ao salvar a configuração.");
+    alert("Erro ao salvar a configuração: " + e.message);
   }
 };
 
