@@ -44,12 +44,14 @@ async function startServer() {
   });
 
   app.post('/api/login', (req, res) => {
+    console.log('[LOGIN] Received request body:', req.body);
     try {
       const { email = '', pass = '' } = req.body || {};
       const db = readDb() || { settings: {} };
       const adminEmail = String(db.settings?.adminEmail || 'admin').trim();
       const adminPass = String(db.settings?.adminPass || '123456').trim();
       
+      console.log(`[LOGIN] Comparing email: "${email}" === "${adminEmail}", pass: "${pass}" === "${adminPass}"`);
       if (String(email).trim().toLowerCase() === adminEmail.toLowerCase() && String(pass).trim() === adminPass) {
         res.json({ success: true, token: 'validated' });
       } else {
