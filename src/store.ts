@@ -3,7 +3,8 @@ import { Property } from './types';
 export const subscribeToProperties = (callback: (properties: Property[]) => void) => {
   const fetchProps = async () => {
     try {
-      const res = await fetch('/api/data');
+      // Usamos timestamp para evitar que o Netlify faça cache do arquivo
+      const res = await fetch(`/database.json?t=${new Date().getTime()}`);
       if (res.ok) {
         const data = await res.json();
         callback(data.properties || []);
@@ -24,7 +25,7 @@ export const subscribeToProperties = (callback: (properties: Property[]) => void
 export const subscribeToSettings = (callback: (settings: any) => void) => {
   const fetchSettings = async () => {
     try {
-      const res = await fetch('/api/data');
+      const res = await fetch(`/database.json?t=${new Date().getTime()}`);
       if (res.ok) {
         const data = await res.json();
         callback(data.settings || {});

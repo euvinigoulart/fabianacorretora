@@ -3,7 +3,7 @@ import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import fs from 'fs';
 
-const DB_FILE = path.join(process.cwd(), 'database.json');
+const DB_FILE = path.join(process.cwd(), 'public', 'database.json');
 
 // Initialize database
 if (!fs.existsSync(DB_FILE)) {
