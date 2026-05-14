@@ -49,7 +49,7 @@ async function startServer() {
     const adminEmail = db.settings.adminEmail || 'admin@admin.com';
     const adminPass = db.settings.adminPass || '1234';
     
-    if (email === adminEmail && pass === adminPass) {
+    if (email?.trim().toLowerCase() === adminEmail.toLowerCase() && pass === adminPass) {
       res.json({ success: true, token: 'validated' });
     } else {
       res.status(401).json({ error: 'Credenciais inválidas' });
