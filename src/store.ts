@@ -1,9 +1,9 @@
 import { Property } from './types';
-import { supabase } from './lib/supabase';
+import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { INITIAL_PROPERTIES } from './data';
 
 export const getProperties = async (): Promise<Property[]> => {
-  if (!import.meta.env.VITE_SUPABASE_URL) {
+  if (!isSupabaseConfigured) {
     console.warn("Supabase não configurado. Exibindo dados locais.");
     const data = localStorage.getItem('aurum_properties');
     if (data) return JSON.parse(data);
@@ -25,7 +25,7 @@ export const getProperties = async (): Promise<Property[]> => {
 };
 
 export const saveProperties = async (properties: Property[]): Promise<boolean> => {
-  if (!import.meta.env.VITE_SUPABASE_URL) {
+  if (!isSupabaseConfigured) {
     try {
       localStorage.setItem('aurum_properties', JSON.stringify(properties));
       return true;
@@ -78,7 +78,7 @@ export const deletePropertyFromSupabase = async (id: string | number): Promise<b
 };
 
 export const uploadImageToSupabase = async (file: File): Promise<string | null> => {
-   if (!import.meta.env.VITE_SUPABASE_URL) return null;
+   if (!isSupabaseConfigured) return null;
    
    const fileExt = file.name ? file.name.split('.').pop() : 'jpg';
    const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
@@ -96,7 +96,7 @@ export const uploadImageToSupabase = async (file: File): Promise<string | null> 
 };
 
 export const getCredentials = async () => {
-  if (!import.meta.env.VITE_SUPABASE_URL) {
+  if (!isSupabaseConfigured) {
     const data = localStorage.getItem('aurum_credentials');
     if (data) return JSON.parse(data);
     return { user: 'admin', pass: '1234' };
@@ -111,7 +111,7 @@ export const getCredentials = async () => {
 };
 
 export const saveCredentials = async (user: string, pass: string) => {
-  if (!import.meta.env.VITE_SUPABASE_URL) {
+  if (!isSupabaseConfigured) {
     localStorage.setItem('aurum_credentials', JSON.stringify({ user, pass }));
     return;
   }
@@ -119,12 +119,12 @@ export const saveCredentials = async (user: string, pass: string) => {
 };
 
 export const getSupabaseSettings = async () => {
-  if (!import.meta.env.VITE_SUPABASE_URL) return null;
+  if (!isSupabaseConfigured) return null;
   const { data } = await supabase.from('settings').select('*').eq('id', 1).single();
   return data;
 };
 
 export const saveSupabaseSetting = async (key: string, value: string) => {
-   if (!import.meta.env.VITE_SUPABASE_URL) return;
+   if (!isSupabaseConfigured) return;
    await supabase.from('settings').update({ [key]: value }).eq('id', 1);
 };

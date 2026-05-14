@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { LogOut, Plus, Trash2, Edit, Save, Settings } from 'lucide-react';
 import { Property } from '../types';
 import { getProperties, syncPropertiesToSupabase, deletePropertyFromSupabase, getCredentials, saveCredentials, uploadImageToSupabase, getSupabaseSettings, saveSupabaseSetting } from '../store';
+import { isSupabaseConfigured } from '../lib/supabase';
 import { Link } from 'react-router-dom';
 
 export default function Admin() {
@@ -66,7 +67,7 @@ export default function Admin() {
   };
 
   const handleRemoveWatermark = async () => {
-    if (import.meta.env.VITE_SUPABASE_URL) await saveSupabaseSetting('watermark_img', '');
+    if (isSupabaseConfigured) await saveSupabaseSetting('watermark_img', '');
     else localStorage.removeItem('aurum_watermark_image');
     setWatermarkImg('');
   };
@@ -81,7 +82,7 @@ export default function Admin() {
   };
 
   const handleRemoveHero = async () => {
-    if (import.meta.env.VITE_SUPABASE_URL) await saveSupabaseSetting('hero_img', '');
+    if (isSupabaseConfigured) await saveSupabaseSetting('hero_img', '');
     else localStorage.removeItem('aurum_hero_image');
     setHeroImg('');
   };
@@ -96,7 +97,7 @@ export default function Admin() {
   };
 
   const handleRemoveAbout = async () => {
-    if (import.meta.env.VITE_SUPABASE_URL) await saveSupabaseSetting('about_img', '');
+    if (isSupabaseConfigured) await saveSupabaseSetting('about_img', '');
     else localStorage.removeItem('aurum_about_image');
     setAboutImg('');
   };
@@ -111,7 +112,7 @@ export default function Admin() {
   };
 
   const handleRemoveCta = async () => {
-    if (import.meta.env.VITE_SUPABASE_URL) await saveSupabaseSetting('cta_img', '');
+    if (isSupabaseConfigured) await saveSupabaseSetting('cta_img', '');
     else localStorage.removeItem('aurum_cta_image');
     setCtaImg('');
   };
@@ -126,7 +127,7 @@ export default function Admin() {
   };
 
   const handleRemoveFooterLogo = async () => {
-    if (import.meta.env.VITE_SUPABASE_URL) await saveSupabaseSetting('footer_logo_img', '');
+    if (isSupabaseConfigured) await saveSupabaseSetting('footer_logo_img', '');
     else localStorage.removeItem('aurum_footer_logo');
     setFooterLogoImg('');
   };
@@ -141,7 +142,7 @@ export default function Admin() {
   };
 
   const handleRemoveProfile = async () => {
-    if (import.meta.env.VITE_SUPABASE_URL) await saveSupabaseSetting('profile_img', '');
+    if (isSupabaseConfigured) await saveSupabaseSetting('profile_img', '');
     else localStorage.removeItem('aurum_profile_image');
     setProfileImg('');
   };
@@ -187,7 +188,7 @@ export default function Admin() {
   };
 
   const uploadAndSetImage = async (file: File, resizedDataUrl: string, key: string, setter: (val: string) => void) => {
-     if (import.meta.env.VITE_SUPABASE_URL) {
+     if (isSupabaseConfigured) {
          setIsUploading(true);
          const fileObj = dataURLtoFile(resizedDataUrl, file.name);
          const url = await uploadImageToSupabase(fileObj);
@@ -261,7 +262,7 @@ export default function Admin() {
     if (file) {
       setIsUploading(true);
       const resized = await resizeImage(file);
-      if (import.meta.env.VITE_SUPABASE_URL) {
+      if (isSupabaseConfigured) {
          const fileObj = dataURLtoFile(resized, file.name);
          const url = await uploadImageToSupabase(fileObj);
          if (url) {
@@ -284,7 +285,7 @@ export default function Admin() {
         const file = files[i];
         const resized = await resizeImage(file);
         
-        if (import.meta.env.VITE_SUPABASE_URL) {
+        if (isSupabaseConfigured) {
             const fileObj = dataURLtoFile(resized, file.name);
             const url = await uploadImageToSupabase(fileObj);
             if (url) newGallery.push(url);
@@ -314,7 +315,7 @@ export default function Admin() {
       return;
     }
     
-    if (import.meta.env.VITE_SUPABASE_URL) {
+    if (isSupabaseConfigured) {
         setIsUploading(true);
         const result = await syncPropertiesToSupabase({
             ...formData,
@@ -342,7 +343,7 @@ export default function Admin() {
 
   const handleDeleteProperty = async (id: string | number) => {
     if (window.confirm('Tem certeza que deseja excluir este imóvel?')) {
-      if (import.meta.env.VITE_SUPABASE_URL) {
+      if (isSupabaseConfigured) {
           const ok = await deletePropertyFromSupabase(id);
           if (ok) setPropertiesState(await getProperties());
           else alert("Erro ao deletar do Supabase");
