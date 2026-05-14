@@ -4,11 +4,13 @@ import { Property } from '../types';
 import { subscribeToProperties, saveProperty, deletePropertyFromDb, subscribeToSettings, saveSetting, removeSetting } from '../store';
 import { Link } from 'react-router-dom';
 import { auth, db } from '../firebase';
-import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from 'firebase/auth';
+import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 export default function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [email, setEmail] = useState('');
+  const [pass, setPass] = useState('');
   const [authError, setAuthError] = useState('');
 
   const [properties, setPropertiesState] = useState<Property[]>([]);
@@ -171,13 +173,12 @@ export default function Admin() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      await signInWithEmailAndPassword(auth, email, pass);
       setAuthError('');
     } catch (err: any) {
       console.error(err);
-      if (err.code === 'auth/popup-blocked') {
-        setAuthError('Pop-up bloqueado. Por favor, permita pop-ups ou abra em nova aba.');
+      if (err.code === 'auth/invalid-login-credentials' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+        setAuthError('Usuário ou senha incorretos.');
       } else {
         setAuthError(`Erro: ${err.message || 'Tente novamente.'}`);
       }
@@ -320,12 +321,14 @@ export default function Admin() {
 
   if (!isAuthenticated) return (
     <div className="min-h-screen bg-[#050505] flex justify-center items-center">
-      <div className="w-96 p-8 bg-[#0a0a0a] border border-white/10 flex flex-col gap-4">
+      <form onSubmit={handleLogin} className="w-96 p-8 bg-[#0a0a0a] border border-white/10 flex flex-col gap-4">
         <h2 className="text-2xl text-white font-serif text-center mb-4">Acesso Restrito</h2>
+        <input type="email" placeholder="Email do administrador" value={email} onChange={e => setEmail(e.target.value)} className="p-3 bg-black text-white outline-none border border-white/10 focus:border-gold-500" required />
+        <input type="password" placeholder="Senha" value={pass} onChange={e => setPass(e.target.value)} className="p-3 bg-black text-white outline-none border border-white/10 focus:border-gold-500" required />
         {authError && <p className="text-red-500 text-sm text-center">{authError}</p>}
-        <button onClick={handleLogin} className="mt-2 p-3 bg-gold-500 text-black uppercase font-medium">Entrar com Google</button>
+        <button type="submit" className="mt-2 p-3 bg-gold-500 text-black uppercase font-medium">Entrar</button>
         <Link to="/" className="text-neutral-500 text-sm text-center hover:text-white mt-4">Voltar</Link>
-      </div>
+      </form>
     </div>
   );
 
