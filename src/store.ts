@@ -1,39 +1,73 @@
 import { Property } from './types';
-import { INITIAL_PROPERTIES } from './data';
+import { db } from './firebase';
+import { collection, doc, getDocs, getDoc, setDoc, deleteDoc, onSnapshot, updateDoc } from 'firebase/firestore';
 
-export const getProperties = (): Property[] => {
-  const data = localStorage.getItem('aurum_properties');
-  if (data) {
-    return JSON.parse(data);
-  }
-  localStorage.setItem('aurum_properties', JSON.stringify(INITIAL_PROPERTIES));
-  return INITIAL_PROPERTIES;
+export const subscribeToProperties = (callback: (properties: Property[]) => void) => {
+  return onSnapshot(collection(db, 'properties'), (snapshot) => {
+    const props = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Property));
+    callback(props);
+  }, (error) => {
+    console.error('Firestore Error:', error);
+  });
 };
 
-export const saveProperties = (properties: Property[]): boolean => {
+export const subscribeToSettings = (callback: (settings: any) => void) => {
+  return onSnapshot(doc(db, 'settings', 'global'), (docSnap) => {
+    if (docSnap.exists()) {
+      callback(docSnap.data());
+    } else {
+      callback({});
+    }
+  }, (error) => {
+    console.error('Firestore Error:', error);
+  });
+};
+
+export const saveProperty = async (property: Property): Promise<boolean> => {
   try {
-    localStorage.setItem('aurum_properties', JSON.stringify(properties));
+    const propId = property.id.toString();
+    await setDoc(doc(db, 'properties', propId), property);
     return true;
   } catch (e: any) {
-    if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
-      alert("Erro: O armazenamento local está cheio. As imagens enviadas são muito grandes. Tente enviar fotos menores.");
-    } else {
-      alert("Erro ao salvar: " + e.message);
-    }
+    alert("Erro ao salvar imóvel. Limite de tamanho pode ter sido excedido (1MB). Pode usar fotos menores.");
+    console.error("Firestore error: " + e.message);
     return false;
   }
 };
 
-export const getCredentials = () => {
-  const data = localStorage.getItem('aurum_credentials');
-  if (data) {
-    return JSON.parse(data);
+export const deletePropertyFromDb = async (id: string | number) => {
+  try {
+    await deleteDoc(doc(db, 'properties', id.toString()));
+  } catch (e: any) {
+    console.error(e);
   }
-  const defaultCreds = { user: 'admin', pass: '1234' };
-  localStorage.setItem('aurum_credentials', JSON.stringify(defaultCreds));
-  return defaultCreds;
 };
 
-export const saveCredentials = (user: string, pass: string) => {
-  localStorage.setItem('aurum_credentials', JSON.stringify({ user, pass }));
+export const saveSetting = async (key: string, value: string) => {
+  try {
+    const settingsRef = doc(db, 'settings', 'global');
+    const docSnap = await getDoc(settingsRef);
+    if (!docSnap.exists()) {
+      await setDoc(settingsRef, { [key]: value });
+    } else {
+      await updateDoc(settingsRef, { [key]: value });
+    }
+  } catch (e: any) {
+    if (e.message.includes('No document to update') || e.code === 'not-found') {
+      await setDoc(doc(db, 'settings', 'global'), { [key]: value });
+    } else {
+      console.error(e);
+      alert("Erro ao salvar a imagem." + e.message);
+    }
+  }
 };
+
+export const removeSetting = async (key: string) => {
+  try {
+    const settingsRef = doc(db, 'settings', 'global');
+    await updateDoc(settingsRef, { [key]: '' });
+  } catch (e) {
+    console.error(e);
+  }
+};
+

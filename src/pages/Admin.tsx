@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { LogOut, Plus, Trash2, Edit, Save, Settings } from 'lucide-react';
 import { Property } from '../types';
-import { getProperties, saveProperties, getCredentials, saveCredentials } from '../store';
+import { subscribeToProperties, saveProperty, deletePropertyFromDb, subscribeToSettings, saveSetting, removeSetting } from '../store';
 import { Link } from 'react-router-dom';
+import { auth, db } from '../firebase';
+import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 export default function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState('');
-  const [pass, setPass] = useState('');
   const [authError, setAuthError] = useState('');
 
   const [properties, setPropertiesState] = useState<Property[]>([]);
@@ -15,8 +16,6 @@ export default function Admin() {
   const [editingId, setEditingId] = useState<string | number | null>(null);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [newUser, setNewUser] = useState('');
-  const [newPass, setNewPass] = useState('');
   const [watermarkImg, setWatermarkImg] = useState<string>('');
   const [heroImg, setHeroImg] = useState<string>('');
   const [aboutImg, setAboutImg] = useState<string>('');
@@ -31,14 +30,39 @@ export default function Admin() {
   const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setIsAuthenticated(true);
+        // check and create admin
+        if (user.email === 'frcalvescaldovino@gmail.com') {
+          const adminRef = doc(db, 'admins', user.uid);
+          const adminDoc = await getDoc(adminRef);
+          if (!adminDoc.exists()) {
+            await setDoc(adminRef, { isAdmin: true });
+          }
+        }
+      } else {
+        setIsAuthenticated(false);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
     if (isAuthenticated) {
-      setPropertiesState(getProperties());
-      setWatermarkImg(localStorage.getItem('aurum_watermark_image') || '');
-      setHeroImg(localStorage.getItem('aurum_hero_image') || '');
-      setAboutImg(localStorage.getItem('aurum_about_image') || '');
-      setCtaImg(localStorage.getItem('aurum_cta_image') || '');
-      setFooterLogoImg(localStorage.getItem('aurum_footer_logo') || '');
-      setProfileImg(localStorage.getItem('aurum_profile_image') || '');
+      const unsubProps = subscribeToProperties(setPropertiesState);
+      const unsubSettings = subscribeToSettings((settings) => {
+        setWatermarkImg(settings.watermarkImage || localStorage.getItem('aurum_watermark_image') || '');
+        setHeroImg(settings.heroImage || localStorage.getItem('aurum_hero_image') || '');
+        setAboutImg(settings.aboutImage || localStorage.getItem('aurum_about_image') || '');
+        setCtaImg(settings.ctaImage || localStorage.getItem('aurum_cta_image') || '');
+        setFooterLogoImg(settings.footerLogo || localStorage.getItem('aurum_footer_logo') || '');
+        setProfileImg(settings.profileImage || localStorage.getItem('aurum_profile_image') || '');
+      });
+      return () => {
+        unsubProps();
+        unsubSettings();
+      };
     }
   }, [isAuthenticated]);
 
@@ -47,18 +71,16 @@ export default function Admin() {
     if (file) {
       try {
         const resized = await resizeImage(file, false);
-        localStorage.setItem('aurum_watermark_image', resized);
-        setWatermarkImg(resized);
+        await saveSetting('watermarkImage', resized);
         alert("Marca d'água atualizada com sucesso!");
       } catch(e: any) {
-        alert("Erro ao salvar imagem. O armazenamento local pode estar cheio.");
+        alert("Erro ao salvar imagem. Verifique o limite de dados.");
       }
     }
   };
 
-  const handleRemoveWatermark = () => {
-    localStorage.removeItem('aurum_watermark_image');
-    setWatermarkImg('');
+  const handleRemoveWatermark = async () => {
+    await removeSetting('watermarkImage');
   };
 
   const handleHeroUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -66,18 +88,16 @@ export default function Admin() {
     if (file) {
       try {
         const resized = await resizeImage(file, false);
-        localStorage.setItem('aurum_hero_image', resized);
-        setHeroImg(resized);
+        await saveSetting('heroImage', resized);
         alert("Imagem de fundo da tela inicial atualizada com sucesso!");
       } catch(e: any) {
-        alert("Erro ao salvar imagem. O armazenamento local pode estar cheio.");
+        alert("Erro ao salvar imagem. Verifique o limite de dados.");
       }
     }
   };
 
-  const handleRemoveHero = () => {
-    localStorage.removeItem('aurum_hero_image');
-    setHeroImg('');
+  const handleRemoveHero = async () => {
+    await removeSetting('heroImage');
   };
 
   const handleAboutUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -85,18 +105,16 @@ export default function Admin() {
     if (file) {
       try {
         const resized = await resizeImage(file, false);
-        localStorage.setItem('aurum_about_image', resized);
-        setAboutImg(resized);
+        await saveSetting('aboutImage', resized);
         alert("Imagem da seção Sobre atualizada com sucesso!");
       } catch(e: any) {
-        alert("Erro ao salvar imagem. O armazenamento local pode estar cheio.");
+        alert("Erro ao salvar imagem. Verifique o limite de dados.");
       }
     }
   };
 
-  const handleRemoveAbout = () => {
-    localStorage.removeItem('aurum_about_image');
-    setAboutImg('');
+  const handleRemoveAbout = async () => {
+    await removeSetting('aboutImage');
   };
 
   const handleCtaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -104,18 +122,16 @@ export default function Admin() {
     if (file) {
       try {
         const resized = await resizeImage(file, false);
-        localStorage.setItem('aurum_cta_image', resized);
-        setCtaImg(resized);
+        await saveSetting('ctaImage', resized);
         alert("Imagem de fundo do Contato atualizada com sucesso!");
       } catch(e: any) {
-        alert("Erro ao salvar imagem. O armazenamento local pode estar cheio.");
+        alert("Erro ao salvar imagem. Verifique o limite de dados.");
       }
     }
   };
 
-  const handleRemoveCta = () => {
-    localStorage.removeItem('aurum_cta_image');
-    setCtaImg('');
+  const handleRemoveCta = async () => {
+    await removeSetting('ctaImage');
   };
 
   const handleFooterLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -123,18 +139,16 @@ export default function Admin() {
     if (file) {
       try {
         const resized = await resizeImage(file, false);
-        localStorage.setItem('aurum_footer_logo', resized);
-        setFooterLogoImg(resized);
+        await saveSetting('footerLogo', resized);
         alert("Logo do rodapé atualizada com sucesso!");
       } catch(e: any) {
-        alert("Erro ao salvar imagem. O armazenamento local pode estar cheio.");
+        alert("Erro ao salvar imagem. Verifique o limite de dados.");
       }
     }
   };
 
-  const handleRemoveFooterLogo = () => {
-    localStorage.removeItem('aurum_footer_logo');
-    setFooterLogoImg('');
+  const handleRemoveFooterLogo = async () => {
+    await removeSetting('footerLogo');
   };
 
   const handleProfileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -142,46 +156,31 @@ export default function Admin() {
     if (file) {
       try {
         const resized = await resizeImage(file, false);
-        localStorage.setItem('aurum_profile_image', resized);
-        setProfileImg(resized);
+        await saveSetting('profileImage', resized);
         alert("Foto de perfil atualizada com sucesso!");
       } catch(e: any) {
-        alert("Erro ao salvar imagem. O armazenamento local pode estar cheio.");
+        alert("Erro ao salvar imagem. Verifique o limite de dados.");
       }
     }
   };
 
-  const handleRemoveProfile = () => {
-    localStorage.removeItem('aurum_profile_image');
-    setProfileImg('');
+  const handleRemoveProfile = async () => {
+    await removeSetting('profileImage');
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const creds = getCredentials();
-    if (user === creds.user && pass === creds.pass) {
-      setIsAuthenticated(true);
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
       setAuthError('');
-      setNewUser(creds.user);
-      setNewPass(creds.pass);
-    } else {
-      setAuthError('Usuário ou senha incorretos.');
+    } catch (err) {
+      setAuthError('Erro ao fazer login. Tente novamente.');
     }
   };
 
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    setUser('');
-    setPass('');
-  };
-
-  const handleSaveCredentials = (e: React.FormEvent) => {
-    e.preventDefault();
-    if(newUser && newPass) {
-      saveCredentials(newUser, newPass);
-      alert('Credenciais atualizadas com sucesso!');
-      setIsSettingsOpen(false);
-    }
+  const handleLogout = async () => {
+    await signOut(auth);
   };
 
   const resizeImage = (file: File, applyWatermark: boolean = true): Promise<string> => {
@@ -276,31 +275,29 @@ export default function Admin() {
     }));
   };
 
-  const handleSaveProperty = (e: React.FormEvent) => {
+  const handleSaveProperty = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.image) {
       alert("A imagem principal é obrigatória.");
       return;
     }
     
-    let updatedProps;
-    if (editingId) {
-      updatedProps = properties.map(p => p.id === editingId ? { ...formData, id: editingId } : p);
-    } else {
-      updatedProps = [...properties, { ...formData, id: Date.now() }];
+    setIsUploading(true);
+    let propToSave = { ...formData };
+    if (!editingId) {
+      propToSave.id = Date.now().toString();
     }
     
-    if (saveProperties(updatedProps)) {
-      setPropertiesState(updatedProps);
+    const success = await saveProperty(propToSave);
+    if (success) {
       resetForm();
     }
+    setIsUploading(false);
   };
 
-  const handleDeleteProperty = (id: string | number) => {
+  const handleDeleteProperty = async (id: string | number) => {
     if (window.confirm('Tem certeza que deseja excluir este imóvel?')) {
-      const updatedProps = properties.filter(p => p.id !== id);
-      setPropertiesState(updatedProps);
-      saveProperties(updatedProps);
+      await deletePropertyFromDb(id);
     }
   };
 
@@ -318,14 +315,12 @@ export default function Admin() {
 
   if (!isAuthenticated) return (
     <div className="min-h-screen bg-[#050505] flex justify-center items-center">
-      <form onSubmit={handleLogin} className="w-96 p-8 bg-[#0a0a0a] border border-white/10 flex flex-col gap-4">
+      <div className="w-96 p-8 bg-[#0a0a0a] border border-white/10 flex flex-col gap-4">
         <h2 className="text-2xl text-white font-serif text-center mb-4">Acesso Restrito</h2>
-        <input placeholder="Usuário (padrão: admin)" value={user} onChange={e => setUser(e.target.value)} className="p-3 bg-black text-white outline-none border border-white/10 focus:border-gold-500" required />
-        <input type="password" placeholder="Senha (padrão: 1234)" value={pass} onChange={e => setPass(e.target.value)} className="p-3 bg-black text-white outline-none border border-white/10 focus:border-gold-500" required />
         {authError && <p className="text-red-500 text-sm text-center">{authError}</p>}
-        <button type="submit" className="mt-2 p-3 bg-gold-500 text-black uppercase font-medium">Entrar</button>
+        <button onClick={handleLogin} className="mt-2 p-3 bg-gold-500 text-black uppercase font-medium">Entrar com Google</button>
         <Link to="/" className="text-neutral-500 text-sm text-center hover:text-white mt-4">Voltar</Link>
-      </form>
+      </div>
     </div>
   );
 
@@ -343,13 +338,7 @@ export default function Admin() {
         {isSettingsOpen && (
           <div className="mb-8 p-6 bg-[#0a0a0a] border border-white/10 flex flex-col gap-6">
             <h3 className="text-gold-500 font-serif">Configurações do Sistema</h3>
-            <form onSubmit={handleSaveCredentials} className="flex gap-4 items-end">
-              <div className="flex-1"><label className="text-xs text-neutral-500 block mb-2">Novo Usuário Admin</label><input required value={newUser} onChange={e=>setNewUser(e.target.value)} className="w-full p-2 bg-black border border-white/10 text-white" /></div>
-              <div className="flex-1"><label className="text-xs text-neutral-500 block mb-2">Nova Senha Admin</label><input required type="password" value={newPass} onChange={e=>setNewPass(e.target.value)} className="w-full p-2 bg-black border border-white/10 text-white" /></div>
-              <button type="submit" className="p-2 px-6 bg-gold-500 text-black h-[42px] font-medium"><Save size={18}/></button>
-            </form>
-            
-            <div className="border-t border-white/5 pt-6">
+            <div className="pt-6">
               <label className="text-sm text-neutral-400 block mb-2">Imagem de Fundo da Tela Inicial</label>
               <div className="flex items-center gap-4">
                 <input type="file" accept="image/*" onChange={handleHeroUpload} className="p-2 border border-white/10 bg-black text-sm flex-1" />
