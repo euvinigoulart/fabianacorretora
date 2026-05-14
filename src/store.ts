@@ -3,16 +3,46 @@ import { db } from './firebase';
 import { collection, doc, getDocs, getDoc, setDoc, deleteDoc, onSnapshot, updateDoc } from 'firebase/firestore';
 
 export const subscribeToProperties = (callback: (properties: Property[]) => void) => {
-  return onSnapshot(collection(db, 'properties'), (snapshot) => {
+  const fetchProps = async () => {
+    try {
+      const snapshot = await getDocs(collection(db, 'properties'));
+      const props = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Property));
+      callback(props);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const unsub = onSnapshot(collection(db, 'properties'), (snapshot) => {
     const props = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Property));
     callback(props);
   }, (error) => {
     console.error('Firestore Error:', error);
   });
+
+  const intervalId = setInterval(fetchProps, 2000);
+
+  return () => {
+    unsub();
+    clearInterval(intervalId);
+  };
 };
 
 export const subscribeToSettings = (callback: (settings: any) => void) => {
-  return onSnapshot(doc(db, 'settings', 'global'), (docSnap) => {
+  const fetchSettings = async () => {
+    try {
+      const docSnap = await getDoc(doc(db, 'settings', 'global'));
+      if (docSnap.exists()) {
+        callback(docSnap.data());
+      } else {
+        callback({});
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const unsub = onSnapshot(doc(db, 'settings', 'global'), (docSnap) => {
     if (docSnap.exists()) {
       callback(docSnap.data());
     } else {
@@ -21,6 +51,13 @@ export const subscribeToSettings = (callback: (settings: any) => void) => {
   }, (error) => {
     console.error('Firestore Error:', error);
   });
+
+  const intervalId = setInterval(fetchSettings, 2000);
+
+  return () => {
+    unsub();
+    clearInterval(intervalId);
+  };
 };
 
 export const saveProperty = async (property: Property): Promise<boolean> => {

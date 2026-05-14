@@ -190,8 +190,8 @@ export default function Admin() {
         const img = new Image();
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          const MAX_WIDTH = 1200;
-          const MAX_HEIGHT = 800;
+          const MAX_WIDTH = 800;
+          const MAX_HEIGHT = 600;
           let width = img.width;
           let height = img.height;
 
@@ -213,7 +213,7 @@ export default function Admin() {
 
           const watermarkData = localStorage.getItem('aurum_watermark_image');
           const outputFormat = file.type === 'image/png' ? 'image/png' : 'image/webp';
-          const quality = 0.7;
+          const quality = 0.5;
 
           if (applyWatermark && watermarkData && ctx) {
             const wmImg = new Image();
