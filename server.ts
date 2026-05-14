@@ -44,15 +44,19 @@ async function startServer() {
   });
 
   app.post('/api/login', (req, res) => {
-    const { email, pass } = req.body;
-    const db = readDb();
-    const adminEmail = String(db.settings?.adminEmail || 'admin').trim();
-    const adminPass = String(db.settings?.adminPass || '123456').trim();
-    
-    if (String(email).trim().toLowerCase() === adminEmail.toLowerCase() && String(pass).trim() === adminPass) {
-      res.json({ success: true, token: 'validated' });
-    } else {
-      res.status(401).json({ error: 'Email ou senha incorretos.' });
+    try {
+      const { email = '', pass = '' } = req.body || {};
+      const db = readDb() || { settings: {} };
+      const adminEmail = String(db.settings?.adminEmail || 'admin').trim();
+      const adminPass = String(db.settings?.adminPass || '123456').trim();
+      
+      if (String(email).trim().toLowerCase() === adminEmail.toLowerCase() && String(pass).trim() === adminPass) {
+        res.json({ success: true, token: 'validated' });
+      } else {
+        res.status(401).json({ error: `Credenciais incorretas (tentou: ${String(email)} / ${String(pass)})` });
+      }
+    } catch (e: any) {
+      res.status(500).json({ error: 'Server error: ' + e.message });
     }
   });
 
