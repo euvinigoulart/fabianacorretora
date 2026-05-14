@@ -315,6 +315,11 @@ export default function Admin() {
     <div className="min-h-screen bg-[#050505] flex justify-center items-center">
       <form onSubmit={handleLogin} className="w-96 p-8 bg-[#0a0a0a] border border-white/10 flex flex-col gap-4">
         <h2 className="text-2xl text-white font-serif text-center mb-4">Acesso Restrito</h2>
+        <div className="bg-white/5 border border-white/10 p-3 rounded text-sm text-neutral-400 mb-2 text-center">
+          Credenciais padrão:<br/>
+          Login: <strong className="text-white">admin</strong><br/>
+          Senha: <strong className="text-white">1234</strong>
+        </div>
         <input type="text" placeholder="Login" value={email} onChange={e => setEmail(e.target.value)} className="p-3 bg-black text-white outline-none border border-white/10 focus:border-gold-500" required />
         <input type="password" placeholder="Senha" value={pass} onChange={e => setPass(e.target.value)} className="p-3 bg-black text-white outline-none border border-white/10 focus:border-gold-500" required />
         {authError && <p className="text-red-500 text-sm text-center">{authError}</p>}
