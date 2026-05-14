@@ -33,12 +33,27 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    setProperties(getProperties());
-    setHeroImg(localStorage.getItem('aurum_hero_image') || '');
-    setAboutImg(localStorage.getItem('aurum_about_image') || '');
-    setCtaImg(localStorage.getItem('aurum_cta_image') || '');
-    setFooterLogoImg(localStorage.getItem('aurum_footer_logo') || '');
-    setProfileImg(localStorage.getItem('aurum_profile_image') || '');
+    getProperties().then(setProperties);
+    
+    const loadSettings = async () => {
+         // Tentando primeiro via supabase
+         const supaSettings = await import('./../store').then(m => m.getSupabaseSettings());
+         if (supaSettings) {
+             setHeroImg(supaSettings.hero_img || '');
+             setAboutImg(supaSettings.about_img || '');
+             setCtaImg(supaSettings.cta_img || '');
+             setFooterLogoImg(supaSettings.footer_logo_img || '');
+             setProfileImg(supaSettings.profile_img || '');
+         } else {
+             setHeroImg(localStorage.getItem('aurum_hero_image') || '');
+             setAboutImg(localStorage.getItem('aurum_about_image') || '');
+             setCtaImg(localStorage.getItem('aurum_cta_image') || '');
+             setFooterLogoImg(localStorage.getItem('aurum_footer_logo') || '');
+             setProfileImg(localStorage.getItem('aurum_profile_image') || '');
+         }
+    }
+    loadSettings();
+    
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50);
     };

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { LogOut, Plus, Trash2, Edit, Save, Settings } from 'lucide-react';
 import { Property } from '../types';
-import { getProperties, saveProperties, getCredentials, saveCredentials } from '../store';
+import { getProperties, syncPropertiesToSupabase, deletePropertyFromSupabase, getCredentials, saveCredentials, uploadImageToSupabase, getSupabaseSettings, saveSupabaseSetting } from '../store';
 import { Link } from 'react-router-dom';
 
 export default function Admin() {
@@ -32,127 +32,123 @@ export default function Admin() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      setPropertiesState(getProperties());
-      setWatermarkImg(localStorage.getItem('aurum_watermark_image') || '');
-      setHeroImg(localStorage.getItem('aurum_hero_image') || '');
-      setAboutImg(localStorage.getItem('aurum_about_image') || '');
-      setCtaImg(localStorage.getItem('aurum_cta_image') || '');
-      setFooterLogoImg(localStorage.getItem('aurum_footer_logo') || '');
-      setProfileImg(localStorage.getItem('aurum_profile_image') || '');
+      getProperties().then(setPropertiesState);
+      
+      const loadSettings = async () => {
+         const supaSettings = await getSupabaseSettings();
+         if (supaSettings) {
+             setWatermarkImg(supaSettings.watermark_img || '');
+             setHeroImg(supaSettings.hero_img || '');
+             setAboutImg(supaSettings.about_img || '');
+             setCtaImg(supaSettings.cta_img || '');
+             setFooterLogoImg(supaSettings.footer_logo_img || '');
+             setProfileImg(supaSettings.profile_img || '');
+         } else {
+             setWatermarkImg(localStorage.getItem('aurum_watermark_image') || '');
+             setHeroImg(localStorage.getItem('aurum_hero_image') || '');
+             setAboutImg(localStorage.getItem('aurum_about_image') || '');
+             setCtaImg(localStorage.getItem('aurum_cta_image') || '');
+             setFooterLogoImg(localStorage.getItem('aurum_footer_logo') || '');
+             setProfileImg(localStorage.getItem('aurum_profile_image') || '');
+         }
+      };
+      loadSettings();
     }
   }, [isAuthenticated]);
 
-  const handleWatermarkUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleWatermarkUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        localStorage.setItem('aurum_watermark_image', reader.result as string);
-        setWatermarkImg(reader.result as string);
-        alert("Marca d'água atualizada com sucesso!");
-      };
-      reader.readAsDataURL(file);
+      const resized = await resizeImage(file);
+      await uploadAndSetImage(file, resized, 'watermark_img', setWatermarkImg);
+      alert("Marca d'água atualizada com sucesso!");
     }
   };
 
-  const handleRemoveWatermark = () => {
-    localStorage.removeItem('aurum_watermark_image');
+  const handleRemoveWatermark = async () => {
+    if (import.meta.env.VITE_SUPABASE_URL) await saveSupabaseSetting('watermark_img', '');
+    else localStorage.removeItem('aurum_watermark_image');
     setWatermarkImg('');
   };
 
-  const handleHeroUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleHeroUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        localStorage.setItem('aurum_hero_image', reader.result as string);
-        setHeroImg(reader.result as string);
-        alert("Imagem de fundo da tela inicial atualizada com sucesso!");
-      };
-      reader.readAsDataURL(file);
+      const resized = await resizeImage(file);
+      await uploadAndSetImage(file, resized, 'hero_img', setHeroImg);
+      alert("Imagem de fundo da tela inicial atualizada com sucesso!");
     }
   };
 
-  const handleRemoveHero = () => {
-    localStorage.removeItem('aurum_hero_image');
+  const handleRemoveHero = async () => {
+    if (import.meta.env.VITE_SUPABASE_URL) await saveSupabaseSetting('hero_img', '');
+    else localStorage.removeItem('aurum_hero_image');
     setHeroImg('');
   };
 
-  const handleAboutUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAboutUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        localStorage.setItem('aurum_about_image', reader.result as string);
-        setAboutImg(reader.result as string);
-        alert("Imagem da seção Sobre atualizada com sucesso!");
-      };
-      reader.readAsDataURL(file);
+      const resized = await resizeImage(file);
+      await uploadAndSetImage(file, resized, 'about_img', setAboutImg);
+      alert("Imagem da seção Sobre atualizada com sucesso!");
     }
   };
 
-  const handleRemoveAbout = () => {
-    localStorage.removeItem('aurum_about_image');
+  const handleRemoveAbout = async () => {
+    if (import.meta.env.VITE_SUPABASE_URL) await saveSupabaseSetting('about_img', '');
+    else localStorage.removeItem('aurum_about_image');
     setAboutImg('');
   };
 
-  const handleCtaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCtaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        localStorage.setItem('aurum_cta_image', reader.result as string);
-        setCtaImg(reader.result as string);
-        alert("Imagem de fundo do Contato atualizada com sucesso!");
-      };
-      reader.readAsDataURL(file);
+      const resized = await resizeImage(file);
+      await uploadAndSetImage(file, resized, 'cta_img', setCtaImg);
+      alert("Imagem de fundo do Contato atualizada com sucesso!");
     }
   };
 
-  const handleRemoveCta = () => {
-    localStorage.removeItem('aurum_cta_image');
+  const handleRemoveCta = async () => {
+    if (import.meta.env.VITE_SUPABASE_URL) await saveSupabaseSetting('cta_img', '');
+    else localStorage.removeItem('aurum_cta_image');
     setCtaImg('');
   };
 
-  const handleFooterLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFooterLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        localStorage.setItem('aurum_footer_logo', reader.result as string);
-        setFooterLogoImg(reader.result as string);
-        alert("Logo do rodapé atualizada com sucesso!");
-      };
-      reader.readAsDataURL(file);
+      const resized = await resizeImage(file);
+      await uploadAndSetImage(file, resized, 'footer_logo_img', setFooterLogoImg);
+      alert("Logo do rodapé atualizada com sucesso!");
     }
   };
 
-  const handleRemoveFooterLogo = () => {
-    localStorage.removeItem('aurum_footer_logo');
+  const handleRemoveFooterLogo = async () => {
+    if (import.meta.env.VITE_SUPABASE_URL) await saveSupabaseSetting('footer_logo_img', '');
+    else localStorage.removeItem('aurum_footer_logo');
     setFooterLogoImg('');
   };
 
-  const handleProfileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleProfileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        localStorage.setItem('aurum_profile_image', reader.result as string);
-        setProfileImg(reader.result as string);
-        alert("Foto de perfil atualizada com sucesso!");
-      };
-      reader.readAsDataURL(file);
+      const resized = await resizeImage(file);
+      await uploadAndSetImage(file, resized, 'profile_img', setProfileImg);
+      alert("Foto de perfil atualizada com sucesso!");
     }
   };
 
-  const handleRemoveProfile = () => {
-    localStorage.removeItem('aurum_profile_image');
+  const handleRemoveProfile = async () => {
+    if (import.meta.env.VITE_SUPABASE_URL) await saveSupabaseSetting('profile_img', '');
+    else localStorage.removeItem('aurum_profile_image');
     setProfileImg('');
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const creds = getCredentials();
+    const creds = await getCredentials();
     if (user === creds.user && pass === creds.pass) {
       setIsAuthenticated(true);
       setAuthError('');
@@ -176,6 +172,34 @@ export default function Admin() {
       alert('Credenciais atualizadas com sucesso!');
       setIsSettingsOpen(false);
     }
+  };
+
+  const dataURLtoFile = (dataurl: string, filename: string) => {
+    var arr = dataurl.split(','),
+        mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg',
+        bstr = atob(arr[arr.length - 1]), 
+        n = bstr.length, 
+        u8arr = new Uint8Array(n);
+    while(n--){
+        u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new File([u8arr], filename, {type:mime});
+  };
+
+  const uploadAndSetImage = async (file: File, resizedDataUrl: string, key: string, setter: (val: string) => void) => {
+     if (import.meta.env.VITE_SUPABASE_URL) {
+         setIsUploading(true);
+         const fileObj = dataURLtoFile(resizedDataUrl, file.name);
+         const url = await uploadImageToSupabase(fileObj);
+         setIsUploading(false);
+         if (url) {
+            setter(url);
+            await saveSupabaseSetting(key, url);
+         }
+     } else {
+         localStorage.setItem(`aurum_${key}`, resizedDataUrl);
+         setter(resizedDataUrl);
+     }
   };
 
   const resizeImage = (file: File): Promise<string> => {
@@ -237,7 +261,15 @@ export default function Admin() {
     if (file) {
       setIsUploading(true);
       const resized = await resizeImage(file);
-      setFormData({ ...formData, image: resized });
+      if (import.meta.env.VITE_SUPABASE_URL) {
+         const fileObj = dataURLtoFile(resized, file.name);
+         const url = await uploadImageToSupabase(fileObj);
+         if (url) {
+             setFormData({ ...formData, image: url });
+         }
+      } else {
+         setFormData({ ...formData, image: resized });
+      }
       setIsUploading(false);
     }
   };
@@ -249,8 +281,16 @@ export default function Admin() {
 
     const newGallery: string[] = [];
     for (let i = 0; i < files.length; i++) {
-      const resized = await resizeImage(files[i]);
-      newGallery.push(resized);
+        const file = files[i];
+        const resized = await resizeImage(file);
+        
+        if (import.meta.env.VITE_SUPABASE_URL) {
+            const fileObj = dataURLtoFile(resized, file.name);
+            const url = await uploadImageToSupabase(fileObj);
+            if (url) newGallery.push(url);
+        } else {
+            newGallery.push(resized);
+        }
     }
     
     setFormData(prev => ({
@@ -267,31 +307,50 @@ export default function Admin() {
     }));
   };
 
-  const handleSaveProperty = (e: React.FormEvent) => {
+  const handleSaveProperty = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.image) {
       alert("A imagem principal é obrigatória.");
       return;
     }
     
-    let updatedProps;
-    if (editingId) {
-      updatedProps = properties.map(p => p.id === editingId ? { ...formData, id: editingId } : p);
+    if (import.meta.env.VITE_SUPABASE_URL) {
+        setIsUploading(true);
+        const result = await syncPropertiesToSupabase({
+            ...formData,
+            id: editingId || ''
+        });
+        setIsUploading(false);
+        if (result) {
+            setPropertiesState(await getProperties());
+            resetForm();
+        }
     } else {
-      updatedProps = [...properties, { ...formData, id: Date.now() }];
-    }
-    
-    if (saveProperties(updatedProps)) {
-      setPropertiesState(updatedProps);
-      resetForm();
+        let updatedProps;
+        if (editingId) {
+          updatedProps = properties.map(p => p.id === editingId ? { ...formData, id: editingId } : p);
+        } else {
+          updatedProps = [...properties, { ...formData, id: Date.now() }];
+        }
+        
+        if (await saveProperties(updatedProps)) {
+          setPropertiesState(updatedProps);
+          resetForm();
+        }
     }
   };
 
-  const handleDeleteProperty = (id: string | number) => {
+  const handleDeleteProperty = async (id: string | number) => {
     if (window.confirm('Tem certeza que deseja excluir este imóvel?')) {
-      const updatedProps = properties.filter(p => p.id !== id);
-      setPropertiesState(updatedProps);
-      saveProperties(updatedProps);
+      if (import.meta.env.VITE_SUPABASE_URL) {
+          const ok = await deletePropertyFromSupabase(id);
+          if (ok) setPropertiesState(await getProperties());
+          else alert("Erro ao deletar do Supabase");
+      } else {
+          const updatedProps = properties.filter(p => p.id !== id);
+          setPropertiesState(updatedProps);
+          saveProperties(updatedProps);
+      }
     }
   };
 
