@@ -308,7 +308,7 @@ export default function Admin() {
         <input type="email" placeholder="Email do administrador" value={email} onChange={e => setEmail(e.target.value)} className="p-3 bg-black text-white outline-none border border-white/10 focus:border-gold-500" required />
         <input type="password" placeholder="Senha" value={pass} onChange={e => setPass(e.target.value)} className="p-3 bg-black text-white outline-none border border-white/10 focus:border-gold-500" required />
         {authError && <p className="text-red-500 text-sm text-center">{authError}</p>}
-        <button type="submit" className="mt-2 p-3 bg-gold-500 text-black uppercase font-medium">Entrar</button>
+        <button type="submit" className="mt-2 p-3 bg-gold-500 text-black uppercase font-medium">Acessar Sistema</button>
         <Link to="/" className="text-neutral-500 text-sm text-center hover:text-white mt-4">Voltar</Link>
       </form>
     </div>
