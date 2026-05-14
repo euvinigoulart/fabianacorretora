@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, MapPin, BedDouble, Bath, SquareMenu as Square, Menu, X, Phone, Mail, Instagram, Facebook, ArrowRight, Home as HomeIcon, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { subscribeToProperties, subscribeToSettings } from '../store';
+import { getProperties } from '../store';
 import { Property } from '../types';
 import { Link } from 'react-router-dom';
 import PropertyCard from '../components/PropertyCard';
@@ -33,24 +33,17 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const unsubProps = subscribeToProperties(setProperties);
-    const unsubSettings = subscribeToSettings((settings) => {
-      setHeroImg(settings.heroImage || '');
-      setAboutImg(settings.aboutImage || '');
-      setCtaImg(settings.ctaImage || '');
-      setFooterLogoImg(settings.footerLogo || '');
-      setProfileImg(settings.profileImage || '');
-    });
-
+    setProperties(getProperties());
+    setHeroImg(localStorage.getItem('aurum_hero_image') || '');
+    setAboutImg(localStorage.getItem('aurum_about_image') || '');
+    setCtaImg(localStorage.getItem('aurum_cta_image') || '');
+    setFooterLogoImg(localStorage.getItem('aurum_footer_logo') || '');
+    setProfileImg(localStorage.getItem('aurum_profile_image') || '');
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50);
     };
     window.addEventListener('scroll', handleScroll);
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      unsubProps();
-      unsubSettings();
-    };
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const filteredProperties = properties.filter(p => {
@@ -189,7 +182,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
             <div>
-               <p className="text-gold-500 uppercase tracking-[0.2em] text-xs font-semibold mb-3">Portfólio Exclusivo</p>
+               <p className="text-gold-500 uppercase tracking-[0.2em] text-xs font-semibold mb-3">Curadoria Exclusiva</p>
                <h2 className="font-serif text-4xl md:text-5xl font-light">Imóveis à Venda</h2>
             </div>
           </div>
@@ -207,7 +200,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
             <div>
-               <p className="text-gold-500 uppercase tracking-[0.2em] text-xs font-semibold mb-3">Melhores Opções de Aluguel</p>
+               <p className="text-gold-500 uppercase tracking-[0.2em] text-xs font-semibold mb-3">Longa Duração</p>
                <h2 className="font-serif text-4xl md:text-5xl font-light">Imóveis para Alocação</h2>
             </div>
           </div>

@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { LogOut, Plus, Trash2, Edit, Save, Settings } from 'lucide-react';
 import { Property } from '../types';
-import { subscribeToProperties, saveProperty, deletePropertyFromDb, subscribeToSettings, saveSetting, removeSetting } from '../store';
+import { getProperties, saveProperties, getCredentials, saveCredentials } from '../store';
 import { Link } from 'react-router-dom';
 
 export default function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [email, setEmail] = useState('');
+  const [user, setUser] = useState('');
   const [pass, setPass] = useState('');
   const [authError, setAuthError] = useState('');
 
@@ -15,6 +15,8 @@ export default function Admin() {
   const [editingId, setEditingId] = useState<string | number | null>(null);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [newUser, setNewUser] = useState('');
+  const [newPass, setNewPass] = useState('');
   const [watermarkImg, setWatermarkImg] = useState<string>('');
   const [heroImg, setHeroImg] = useState<string>('');
   const [aboutImg, setAboutImg] = useState<string>('');
@@ -29,167 +31,162 @@ export default function Admin() {
   const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
-    // Check local session
-    if (sessionStorage.getItem('aurum_admin_auth') === 'true') {
-      setIsAuthenticated(true);
-    }
-  }, []);
-
-  useEffect(() => {
     if (isAuthenticated) {
-      const unsubProps = subscribeToProperties(setPropertiesState);
-      const unsubSettings = subscribeToSettings((settings) => {
-        setWatermarkImg(settings.watermarkImage || '');
-        setHeroImg(settings.heroImage || '');
-        setAboutImg(settings.aboutImage || '');
-        setCtaImg(settings.ctaImage || '');
-        setFooterLogoImg(settings.footerLogo || '');
-        setProfileImg(settings.profileImage || '');
-      });
-      return () => {
-        unsubProps();
-        unsubSettings();
-      };
+      setPropertiesState(getProperties());
+      setWatermarkImg(localStorage.getItem('aurum_watermark_image') || '');
+      setHeroImg(localStorage.getItem('aurum_hero_image') || '');
+      setAboutImg(localStorage.getItem('aurum_about_image') || '');
+      setCtaImg(localStorage.getItem('aurum_cta_image') || '');
+      setFooterLogoImg(localStorage.getItem('aurum_footer_logo') || '');
+      setProfileImg(localStorage.getItem('aurum_profile_image') || '');
     }
   }, [isAuthenticated]);
 
-  const handleWatermarkUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleWatermarkUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      try {
-        const resized = await resizeImage(file, false);
-        await saveSetting('watermarkImage', resized);
+      const reader = new FileReader();
+      reader.onload = () => {
+        localStorage.setItem('aurum_watermark_image', reader.result as string);
+        setWatermarkImg(reader.result as string);
         alert("Marca d'água atualizada com sucesso!");
-      } catch(e: any) {
-        alert("Erro ao salvar imagem. Verifique o limite de dados.");
-      }
+      };
+      reader.readAsDataURL(file);
     }
   };
 
-  const handleRemoveWatermark = async () => {
-    await removeSetting('watermarkImage');
+  const handleRemoveWatermark = () => {
+    localStorage.removeItem('aurum_watermark_image');
+    setWatermarkImg('');
   };
 
-  const handleHeroUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleHeroUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      try {
-        const resized = await resizeImage(file, false);
-        await saveSetting('heroImage', resized);
+      const reader = new FileReader();
+      reader.onload = () => {
+        localStorage.setItem('aurum_hero_image', reader.result as string);
+        setHeroImg(reader.result as string);
         alert("Imagem de fundo da tela inicial atualizada com sucesso!");
-      } catch(e: any) {
-        alert("Erro ao salvar imagem. Verifique o limite de dados.");
-      }
+      };
+      reader.readAsDataURL(file);
     }
   };
 
-  const handleRemoveHero = async () => {
-    await removeSetting('heroImage');
+  const handleRemoveHero = () => {
+    localStorage.removeItem('aurum_hero_image');
+    setHeroImg('');
   };
 
-  const handleAboutUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAboutUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      try {
-        const resized = await resizeImage(file, false);
-        await saveSetting('aboutImage', resized);
+      const reader = new FileReader();
+      reader.onload = () => {
+        localStorage.setItem('aurum_about_image', reader.result as string);
+        setAboutImg(reader.result as string);
         alert("Imagem da seção Sobre atualizada com sucesso!");
-      } catch(e: any) {
-        alert("Erro ao salvar imagem. Verifique o limite de dados.");
-      }
+      };
+      reader.readAsDataURL(file);
     }
   };
 
-  const handleRemoveAbout = async () => {
-    await removeSetting('aboutImage');
+  const handleRemoveAbout = () => {
+    localStorage.removeItem('aurum_about_image');
+    setAboutImg('');
   };
 
-  const handleCtaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCtaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      try {
-        const resized = await resizeImage(file, false);
-        await saveSetting('ctaImage', resized);
+      const reader = new FileReader();
+      reader.onload = () => {
+        localStorage.setItem('aurum_cta_image', reader.result as string);
+        setCtaImg(reader.result as string);
         alert("Imagem de fundo do Contato atualizada com sucesso!");
-      } catch(e: any) {
-        alert("Erro ao salvar imagem. Verifique o limite de dados.");
-      }
+      };
+      reader.readAsDataURL(file);
     }
   };
 
-  const handleRemoveCta = async () => {
-    await removeSetting('ctaImage');
+  const handleRemoveCta = () => {
+    localStorage.removeItem('aurum_cta_image');
+    setCtaImg('');
   };
 
-  const handleFooterLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFooterLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      try {
-        const resized = await resizeImage(file, false);
-        await saveSetting('footerLogo', resized);
+      const reader = new FileReader();
+      reader.onload = () => {
+        localStorage.setItem('aurum_footer_logo', reader.result as string);
+        setFooterLogoImg(reader.result as string);
         alert("Logo do rodapé atualizada com sucesso!");
-      } catch(e: any) {
-        alert("Erro ao salvar imagem. Verifique o limite de dados.");
-      }
+      };
+      reader.readAsDataURL(file);
     }
   };
 
-  const handleRemoveFooterLogo = async () => {
-    await removeSetting('footerLogo');
+  const handleRemoveFooterLogo = () => {
+    localStorage.removeItem('aurum_footer_logo');
+    setFooterLogoImg('');
   };
 
-  const handleProfileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleProfileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      try {
-        const resized = await resizeImage(file, false);
-        await saveSetting('profileImage', resized);
+      const reader = new FileReader();
+      reader.onload = () => {
+        localStorage.setItem('aurum_profile_image', reader.result as string);
+        setProfileImg(reader.result as string);
         alert("Foto de perfil atualizada com sucesso!");
-      } catch(e: any) {
-        alert("Erro ao salvar imagem. Verifique o limite de dados.");
-      }
+      };
+      reader.readAsDataURL(file);
     }
   };
 
-  const handleRemoveProfile = async () => {
-    await removeSetting('profileImage');
+  const handleRemoveProfile = () => {
+    localStorage.removeItem('aurum_profile_image');
+    setProfileImg('');
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      const res = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, pass })
-      });
-      if (res.ok) {
-        setIsAuthenticated(true);
-        sessionStorage.setItem('aurum_admin_auth', 'true');
-        setAuthError('');
-      } else {
-        const errJson = await res.json().catch(() => null);
-        setAuthError(errJson?.error || 'Email ou senha incorretos.');
-      }
-    } catch (e: any) {
-      setAuthError('Erro ao fazer login. Tente novamente.');
+    const creds = getCredentials();
+    if (user === creds.user && pass === creds.pass) {
+      setIsAuthenticated(true);
+      setAuthError('');
+      setNewUser(creds.user);
+      setNewPass(creds.pass);
+    } else {
+      setAuthError('Usuário ou senha incorretos.');
     }
   };
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     setIsAuthenticated(false);
-    sessionStorage.removeItem('aurum_admin_auth');
+    setUser('');
+    setPass('');
   };
 
-  const resizeImage = (file: File, applyWatermark: boolean = true): Promise<string> => {
+  const handleSaveCredentials = (e: React.FormEvent) => {
+    e.preventDefault();
+    if(newUser && newPass) {
+      saveCredentials(newUser, newPass);
+      alert('Credenciais atualizadas com sucesso!');
+      setIsSettingsOpen(false);
+    }
+  };
+
+  const resizeImage = (file: File): Promise<string> => {
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = (e) => {
         const img = new Image();
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          const MAX_WIDTH = 500;
-          const MAX_HEIGHT = 400;
+          const MAX_WIDTH = 1200;
+          const MAX_HEIGHT = 800;
           let width = img.width;
           let height = img.height;
 
@@ -209,11 +206,8 @@ export default function Admin() {
           const ctx = canvas.getContext('2d');
           ctx?.drawImage(img, 0, 0, width, height);
 
-          const watermarkData = watermarkImg;
-          const outputFormat = 'image/webp';
-          const quality = 0.3;
-
-          if (applyWatermark && watermarkData && ctx) {
+          const watermarkData = localStorage.getItem('aurum_watermark_image');
+          if (watermarkData && ctx) {
             const wmImg = new Image();
             wmImg.onload = () => {
               ctx.globalAlpha = 0.6;
@@ -222,14 +216,14 @@ export default function Admin() {
               const padding = 20;
               ctx.drawImage(wmImg, width - wmWidth - padding, height - wmHeight - padding, wmWidth, wmHeight);
               ctx.globalAlpha = 1.0;
-              resolve(canvas.toDataURL(outputFormat, quality));
+              resolve(canvas.toDataURL('image/jpeg', 0.6));
             };
             wmImg.onerror = () => {
-              resolve(canvas.toDataURL(outputFormat, quality));
+              resolve(canvas.toDataURL('image/jpeg', 0.6));
             };
             wmImg.src = watermarkData;
           } else {
-            resolve(canvas.toDataURL(outputFormat, quality));
+            resolve(canvas.toDataURL('image/jpeg', 0.6));
           }
         };
         img.src = e.target?.result as string;
@@ -273,29 +267,31 @@ export default function Admin() {
     }));
   };
 
-  const handleSaveProperty = async (e: React.FormEvent) => {
+  const handleSaveProperty = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.image) {
       alert("A imagem principal é obrigatória.");
       return;
     }
     
-    setIsUploading(true);
-    let propToSave = { ...formData };
-    if (!editingId) {
-      propToSave.id = Date.now().toString();
+    let updatedProps;
+    if (editingId) {
+      updatedProps = properties.map(p => p.id === editingId ? { ...formData, id: editingId } : p);
+    } else {
+      updatedProps = [...properties, { ...formData, id: Date.now() }];
     }
     
-    const success = await saveProperty(propToSave);
-    if (success) {
+    if (saveProperties(updatedProps)) {
+      setPropertiesState(updatedProps);
       resetForm();
     }
-    setIsUploading(false);
   };
 
-  const handleDeleteProperty = async (id: string | number) => {
+  const handleDeleteProperty = (id: string | number) => {
     if (window.confirm('Tem certeza que deseja excluir este imóvel?')) {
-      await deletePropertyFromDb(id);
+      const updatedProps = properties.filter(p => p.id !== id);
+      setPropertiesState(updatedProps);
+      saveProperties(updatedProps);
     }
   };
 
@@ -315,15 +311,10 @@ export default function Admin() {
     <div className="min-h-screen bg-[#050505] flex justify-center items-center">
       <form onSubmit={handleLogin} className="w-96 p-8 bg-[#0a0a0a] border border-white/10 flex flex-col gap-4">
         <h2 className="text-2xl text-white font-serif text-center mb-4">Acesso Restrito</h2>
-        <div className="bg-white/5 border border-white/10 p-3 rounded text-sm text-neutral-400 mb-2 text-center">
-          Credenciais padrão:<br/>
-          Login: <strong className="text-white">admin</strong><br/>
-          Senha: <strong className="text-white">123456</strong>
-        </div>
-        <input type="text" placeholder="Login" value={email} onChange={e => setEmail(e.target.value)} className="p-3 bg-black text-white outline-none border border-white/10 focus:border-gold-500" required />
-        <input type="password" placeholder="Senha" value={pass} onChange={e => setPass(e.target.value)} className="p-3 bg-black text-white outline-none border border-white/10 focus:border-gold-500" required />
+        <input placeholder="Usuário (padrão: admin)" value={user} onChange={e => setUser(e.target.value)} className="p-3 bg-black text-white outline-none border border-white/10 focus:border-gold-500" required />
+        <input type="password" placeholder="Senha (padrão: 1234)" value={pass} onChange={e => setPass(e.target.value)} className="p-3 bg-black text-white outline-none border border-white/10 focus:border-gold-500" required />
         {authError && <p className="text-red-500 text-sm text-center">{authError}</p>}
-        <button type="submit" className="mt-2 p-3 bg-gold-500 text-black uppercase font-medium">Acessar Sistema</button>
+        <button type="submit" className="mt-2 p-3 bg-gold-500 text-black uppercase font-medium">Entrar</button>
         <Link to="/" className="text-neutral-500 text-sm text-center hover:text-white mt-4">Voltar</Link>
       </form>
     </div>
@@ -343,7 +334,13 @@ export default function Admin() {
         {isSettingsOpen && (
           <div className="mb-8 p-6 bg-[#0a0a0a] border border-white/10 flex flex-col gap-6">
             <h3 className="text-gold-500 font-serif">Configurações do Sistema</h3>
-            <div className="pt-6">
+            <form onSubmit={handleSaveCredentials} className="flex gap-4 items-end">
+              <div className="flex-1"><label className="text-xs text-neutral-500 block mb-2">Novo Usuário Admin</label><input required value={newUser} onChange={e=>setNewUser(e.target.value)} className="w-full p-2 bg-black border border-white/10 text-white" /></div>
+              <div className="flex-1"><label className="text-xs text-neutral-500 block mb-2">Nova Senha Admin</label><input required type="password" value={newPass} onChange={e=>setNewPass(e.target.value)} className="w-full p-2 bg-black border border-white/10 text-white" /></div>
+              <button type="submit" className="p-2 px-6 bg-gold-500 text-black h-[42px] font-medium"><Save size={18}/></button>
+            </form>
+            
+            <div className="border-t border-white/5 pt-6">
               <label className="text-sm text-neutral-400 block mb-2">Imagem de Fundo da Tela Inicial</label>
               <div className="flex items-center gap-4">
                 <input type="file" accept="image/*" onChange={handleHeroUpload} className="p-2 border border-white/10 bg-black text-sm flex-1" />
@@ -497,8 +494,8 @@ export default function Admin() {
             </select>
             <div className="col-span-2 flex justify-end gap-3 mt-4">
               <button type="button" onClick={resetForm} className="px-6 py-2 border border-white/20 text-neutral-400">Cancelar</button>
-              <button type="submit" disabled={isUploading} className="px-6 py-2 bg-gold-500 text-black font-medium disabled:opacity-50 flex items-center justify-center gap-2 hover:bg-gold-400 transition-colors">
-                {isUploading ? 'Processando fotos...' : <><Save size={18} /> Salvar Imóvel</>}
+              <button type="submit" disabled={isUploading} className="px-6 py-2 bg-gold-500 text-black disabled:opacity-50">
+                {isUploading ? 'Processando fotos...' : 'Salvar Imóvel'}
               </button>
             </div>
           </form>

@@ -1,103 +1,39 @@
 import { Property } from './types';
+import { INITIAL_PROPERTIES } from './data';
 
-export const subscribeToProperties = (callback: (properties: Property[]) => void) => {
-  const fetchProps = async () => {
-    try {
-      const res = await fetch('/api/data');
-      if (res.ok) {
-        const data = await res.json();
-        callback(data.properties || []);
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  fetchProps();
-  const intervalId = setInterval(fetchProps, 2000);
-
-  return () => clearInterval(intervalId);
+export const getProperties = (): Property[] => {
+  const data = localStorage.getItem('aurum_properties');
+  if (data) {
+    return JSON.parse(data);
+  }
+  localStorage.setItem('aurum_properties', JSON.stringify(INITIAL_PROPERTIES));
+  return INITIAL_PROPERTIES;
 };
 
-export const subscribeToSettings = (callback: (settings: any) => void) => {
-  const fetchSettings = async () => {
-    try {
-      const res = await fetch('/api/data');
-      if (res.ok) {
-        const data = await res.json();
-        callback(data.settings || {});
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  fetchSettings();
-  const intervalId = setInterval(fetchSettings, 2000);
-
-  return () => clearInterval(intervalId);
-};
-
-export const saveProperty = async (property: Property): Promise<boolean> => {
+export const saveProperties = (properties: Property[]): boolean => {
   try {
-    const res = await fetch('/api/properties', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(property)
-    });
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`HTTP error! status: ${res.status} - ${text}`);
-    }
+    localStorage.setItem('aurum_properties', JSON.stringify(properties));
     return true;
   } catch (e: any) {
-    alert("Erro ao salvar imóvel: " + e.message);
+    if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+      alert("Erro: O armazenamento local está cheio. As imagens enviadas são muito grandes. Tente enviar fotos menores.");
+    } else {
+      alert("Erro ao salvar: " + e.message);
+    }
     return false;
   }
 };
 
-export const deletePropertyFromDb = async (id: string | number) => {
-  try {
-    await fetch(`/api/properties/${id}`, {
-      method: 'DELETE'
-    });
-  } catch (e: any) {
-    console.error(e);
+export const getCredentials = () => {
+  const data = localStorage.getItem('aurum_credentials');
+  if (data) {
+    return JSON.parse(data);
   }
+  const defaultCreds = { user: 'admin', pass: '1234' };
+  localStorage.setItem('aurum_credentials', JSON.stringify(defaultCreds));
+  return defaultCreds;
 };
 
-export const saveSetting = async (key: string, value: string) => {
-  try {
-    const res = await fetch('/api/settings', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ [key]: value })
-    });
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`HTTP error! status: ${res.status} - ${text}`);
-    }
-  } catch (e: any) {
-    console.error(e);
-    alert("Erro ao salvar a configuração: " + e.message);
-  }
+export const saveCredentials = (user: string, pass: string) => {
+  localStorage.setItem('aurum_credentials', JSON.stringify({ user, pass }));
 };
-
-export const removeSetting = async (key: string) => {
-  try {
-    await fetch('/api/settings', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ [key]: '' })
-    });
-  } catch (e) {
-    console.error(e);
-  }
-};
-
