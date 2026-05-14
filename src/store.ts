@@ -1,29 +1,22 @@
 import { Property } from './types';
-import { db } from './firebase';
-import { collection, doc, getDocs, getDoc, setDoc, deleteDoc, onSnapshot, updateDoc } from 'firebase/firestore';
 
 export const subscribeToProperties = (callback: (properties: Property[]) => void) => {
   const fetchProps = async () => {
     try {
-      const snapshot = await getDocs(collection(db, 'properties'));
-      const props = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Property));
-      callback(props);
+      const res = await fetch('/api/data');
+      if (res.ok) {
+        const data = await res.json();
+        callback(data.properties || []);
+      }
     } catch (e) {
       console.error(e);
     }
   };
 
-  const unsub = onSnapshot(collection(db, 'properties'), (snapshot) => {
-    const props = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Property));
-    callback(props);
-  }, (error) => {
-    console.error('Firestore Error:', error);
-  });
-
+  fetchProps();
   const intervalId = setInterval(fetchProps, 2000);
 
   return () => {
-    unsub();
     clearInterval(intervalId);
   };
 };
@@ -31,50 +24,45 @@ export const subscribeToProperties = (callback: (properties: Property[]) => void
 export const subscribeToSettings = (callback: (settings: any) => void) => {
   const fetchSettings = async () => {
     try {
-      const docSnap = await getDoc(doc(db, 'settings', 'global'));
-      if (docSnap.exists()) {
-        callback(docSnap.data());
-      } else {
-        callback({});
+      const res = await fetch('/api/data');
+      if (res.ok) {
+        const data = await res.json();
+        callback(data.settings || {});
       }
     } catch (e) {
       console.error(e);
     }
   };
 
-  const unsub = onSnapshot(doc(db, 'settings', 'global'), (docSnap) => {
-    if (docSnap.exists()) {
-      callback(docSnap.data());
-    } else {
-      callback({});
-    }
-  }, (error) => {
-    console.error('Firestore Error:', error);
-  });
-
+  fetchSettings();
   const intervalId = setInterval(fetchSettings, 2000);
 
   return () => {
-    unsub();
     clearInterval(intervalId);
   };
 };
 
 export const saveProperty = async (property: Property): Promise<boolean> => {
   try {
-    const propId = property.id.toString();
-    await setDoc(doc(db, 'properties', propId), property);
-    return true;
+    const res = await fetch('/api/properties', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(property)
+    });
+    return res.ok;
   } catch (e: any) {
-    alert("Erro ao salvar imóvel. Limite de tamanho pode ter sido excedido (1MB). Pode usar fotos menores.");
-    console.error("Firestore error: " + e.message);
+    alert("Erro ao salvar imóvel. Limite de tamanho pode ter sido excedido.");
     return false;
   }
 };
 
 export const deletePropertyFromDb = async (id: string | number) => {
   try {
-    await deleteDoc(doc(db, 'properties', id.toString()));
+    await fetch(`/api/properties/${id}`, {
+      method: 'DELETE'
+    });
   } catch (e: any) {
     console.error(e);
   }
@@ -82,27 +70,28 @@ export const deletePropertyFromDb = async (id: string | number) => {
 
 export const saveSetting = async (key: string, value: string) => {
   try {
-    const settingsRef = doc(db, 'settings', 'global');
-    const docSnap = await getDoc(settingsRef);
-    if (!docSnap.exists()) {
-      await setDoc(settingsRef, { [key]: value });
-    } else {
-      await updateDoc(settingsRef, { [key]: value });
-    }
+    await fetch('/api/settings', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ [key]: value })
+    });
   } catch (e: any) {
-    if (e.message.includes('No document to update') || e.code === 'not-found') {
-      await setDoc(doc(db, 'settings', 'global'), { [key]: value });
-    } else {
-      console.error(e);
-      alert("Erro ao salvar a imagem." + e.message);
-    }
+    console.error(e);
+    alert("Erro ao salvar a configuração.");
   }
 };
 
 export const removeSetting = async (key: string) => {
   try {
-    const settingsRef = doc(db, 'settings', 'global');
-    await updateDoc(settingsRef, { [key]: '' });
+    await fetch('/api/settings', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ [key]: '' })
+    });
   } catch (e) {
     console.error(e);
   }

@@ -3,9 +3,6 @@ import { LogOut, Plus, Trash2, Edit, Save, Settings } from 'lucide-react';
 import { Property } from '../types';
 import { subscribeToProperties, saveProperty, deletePropertyFromDb, subscribeToSettings, saveSetting, removeSetting } from '../store';
 import { Link } from 'react-router-dom';
-import { auth, db } from '../firebase';
-import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 export default function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -32,34 +29,22 @@ export default function Admin() {
   const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        setIsAuthenticated(true);
-        // check and create admin
-        if (user.email === 'frcalvescaldovino@gmail.com') {
-          const adminRef = doc(db, 'admins', user.uid);
-          const adminDoc = await getDoc(adminRef);
-          if (!adminDoc.exists()) {
-            await setDoc(adminRef, { isAdmin: true });
-          }
-        }
-      } else {
-        setIsAuthenticated(false);
-      }
-    });
-    return () => unsubscribe();
+    // Check local session
+    if (sessionStorage.getItem('aurum_admin_auth') === 'true') {
+      setIsAuthenticated(true);
+    }
   }, []);
 
   useEffect(() => {
     if (isAuthenticated) {
       const unsubProps = subscribeToProperties(setPropertiesState);
       const unsubSettings = subscribeToSettings((settings) => {
-        setWatermarkImg(settings.watermarkImage || localStorage.getItem('aurum_watermark_image') || '');
-        setHeroImg(settings.heroImage || localStorage.getItem('aurum_hero_image') || '');
-        setAboutImg(settings.aboutImage || localStorage.getItem('aurum_about_image') || '');
-        setCtaImg(settings.ctaImage || localStorage.getItem('aurum_cta_image') || '');
-        setFooterLogoImg(settings.footerLogo || localStorage.getItem('aurum_footer_logo') || '');
-        setProfileImg(settings.profileImage || localStorage.getItem('aurum_profile_image') || '');
+        setWatermarkImg(settings.watermarkImage || '');
+        setHeroImg(settings.heroImage || '');
+        setAboutImg(settings.aboutImage || '');
+        setCtaImg(settings.ctaImage || '');
+        setFooterLogoImg(settings.footerLogo || '');
+        setProfileImg(settings.profileImage || '');
       });
       return () => {
         unsubProps();
@@ -172,21 +157,18 @@ export default function Admin() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      await signInWithEmailAndPassword(auth, email, pass);
+    if (email === 'admin@admin.com' && pass === '1234') {
+      setIsAuthenticated(true);
+      sessionStorage.setItem('aurum_admin_auth', 'true');
       setAuthError('');
-    } catch (err: any) {
-      console.error(err);
-      if (err.code === 'auth/invalid-login-credentials' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
-        setAuthError('Usuário ou senha incorretos.');
-      } else {
-        setAuthError(`Erro: ${err.message || 'Tente novamente.'}`);
-      }
+    } else {
+      setAuthError('Email ou senha incorretos. (padrão: admin@admin.com / 1234)');
     }
   };
 
   const handleLogout = async () => {
-    await signOut(auth);
+    setIsAuthenticated(false);
+    sessionStorage.removeItem('aurum_admin_auth');
   };
 
   const resizeImage = (file: File, applyWatermark: boolean = true): Promise<string> => {
