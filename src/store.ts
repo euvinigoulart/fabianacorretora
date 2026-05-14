@@ -80,19 +80,38 @@ export const deletePropertyFromSupabase = async (id: string | number): Promise<b
 export const uploadImageToSupabase = async (file: File): Promise<string | null> => {
    if (!isSupabaseConfigured) return null;
    
-   const fileExt = file.name ? file.name.split('.').pop() : 'jpg';
-   const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
-   const filePath = `${fileName}`;
-
-   const { error } = await supabase.storage.from('images').upload(filePath, file);
-   
-   if (error) {
-     console.error('Upload Error:', error);
+   try {
+     const fileExt = (file.name || '').split('.').pop()?.replace(/[^a-zA-Z0-9]/g, '') || 'jpg';
+     const fileName = `img_${Date.now()}_${Math.floor(Math.random() * 1000000)}.${fileExt}`;
+     
+     // Converter de forma segura
+     let uploadBody: File | Blob = file;
+     try {
+       // Alguns navegadores móveis têm problemas com objetos File customizados
+       uploadBody = new Blob([await file.arrayBuffer()], { type: file.type || 'image/jpeg' });
+     } catch (e) {
+       console.log('Fallback para file nativo', e);
+     }
+     
+     const { data, error } = await supabase.storage.from('images').upload(fileName, uploadBody, {
+       cacheControl: '3600',
+       upsert: true,
+       contentType: file.type || 'image/jpeg'
+     });
+     
+     if (error) {
+       console.error('Upload Error from Supabase:', error);
+       alert(`Erro no upload: ${error.message || JSON.stringify(error)}`);
+       return null;
+     }
+  
+     const { data: urlData } = supabase.storage.from('images').getPublicUrl(fileName);
+     return urlData.publicUrl;
+   } catch (err: any) {
+     console.error('Unexpected error during upload:', err);
+     alert(`Erro inesperado: ${err.message || String(err)}`);
      return null;
    }
-
-   const { data } = supabase.storage.from('images').getPublicUrl(filePath);
-   return data.publicUrl;
 };
 
 export const getCredentials = async () => {
@@ -126,5 +145,15 @@ export const getSupabaseSettings = async () => {
 
 export const saveSupabaseSetting = async (key: string, value: string) => {
    if (!isSupabaseConfigured) return;
-   await supabase.from('settings').update({ [key]: value }).eq('id', 1);
+   
+   // Tentar atualizar
+   const { data, error } = await supabase.from('settings').update({ [key]: value }).eq('id', 1).select();
+   
+   if (error) {
+     console.error('Erro ao atualizar config:', error);
+   } else if (!data || data.length === 0) {
+     // Se não atualizou nenhuma linha, tenta inserir
+     const { error: insertErr } = await supabase.from('settings').insert({ id: 1, [key]: value });
+     if (insertErr) console.error('Erro ao inserir config:', insertErr);
+   }
 };

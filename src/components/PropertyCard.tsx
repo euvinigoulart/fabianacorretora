@@ -42,7 +42,8 @@ export default function PropertyCard({ property, idx }: PropertyCardProps) {
     }
   };
 
-  const whatsappLink = `https://wa.me/5551994708494?text=${encodeURIComponent(`Olá, gostei do imóvel "${property.title}" e gostaria de mais informações.`)}`;
+  const phoneNumber = property.type === 'rental' ? '5551992658959' : '5551994708494';
+  const whatsappLink = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(`Olá, gostei do imóvel "${property.title}" e gostaria de mais informações.`)}`;
 
   return (
     <motion.div

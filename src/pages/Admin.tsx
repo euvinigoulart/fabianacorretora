@@ -175,16 +175,22 @@ export default function Admin() {
     }
   };
 
-  const dataURLtoFile = (dataurl: string, filename: string) => {
-    var arr = dataurl.split(','),
-        mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg',
-        bstr = atob(arr[arr.length - 1]), 
-        n = bstr.length, 
-        u8arr = new Uint8Array(n);
-    while(n--){
-        u8arr[n] = bstr.charCodeAt(n);
+  const dataURLtoFile = (dataurl: string, filename: string): File => {
+    try {
+      const arr = dataurl.split(',');
+      const mimeMatch = arr[0].match(/:(.*?);/);
+      const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+      const bstr = atob(arr[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while (n--) {
+          u8arr[n] = bstr.charCodeAt(n);
+      }
+      return new File([u8arr], filename || 'image.jpg', { type: mime });
+    } catch (e) {
+      console.error('Error in dataURLtoFile', e);
+      throw e;
     }
-    return new File([u8arr], filename, {type:mime});
   };
 
   const uploadAndSetImage = async (file: File, resizedDataUrl: string, key: string, setter: (val: string) => void) => {
@@ -203,7 +209,7 @@ export default function Admin() {
      }
   };
 
-  const resizeImage = (file: File): Promise<string> => {
+  const resizeImage = (file: File, applyWatermark: boolean = false): Promise<string> => {
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -231,24 +237,69 @@ export default function Admin() {
           const ctx = canvas.getContext('2d');
           ctx?.drawImage(img, 0, 0, width, height);
 
-          const watermarkData = localStorage.getItem('aurum_watermark_image');
-          if (watermarkData && ctx) {
-            const wmImg = new Image();
-            wmImg.onload = () => {
-              ctx.globalAlpha = 0.6;
-              const wmWidth = width * 0.25; // 25% of image width
-              const wmHeight = wmImg.height * (wmWidth / wmImg.width);
-              const padding = 20;
-              ctx.drawImage(wmImg, width - wmWidth - padding, height - wmHeight - padding, wmWidth, wmHeight);
-              ctx.globalAlpha = 1.0;
-              resolve(canvas.toDataURL('image/jpeg', 0.6));
+          if (applyWatermark) {
+            const loadAndApplyWatermark = async () => {
+              try {
+                const supaSettings = await getSupabaseSettings();
+                const watermarkData = (supaSettings ? supaSettings.watermark_img : null) || watermarkImg || localStorage.getItem('aurum_watermark_image');
+
+                if (!watermarkData) {
+                   console.log("No watermark to apply");
+                   resolve(canvas.toDataURL('image/jpeg', 0.6));
+                   return;
+                }
+                
+                const wmImg = new Image();
+                wmImg.crossOrigin = "anonymous";
+                
+                // Fallback timeout in case image never loads or errors
+                const timeoutId = setTimeout(() => {
+                   console.error("Watermark load timeout");
+                   resolve(canvas.toDataURL('image/jpeg', 0.6));
+                }, 10000);
+
+                wmImg.onload = () => {
+                  try {
+                    clearTimeout(timeoutId);
+                    
+                    // Draw the watermark prominently at the center
+                    ctx.globalAlpha = 0.5; // Set to 0.5 for transparency
+                    
+                    // Allow watermark to be up to 50% of the image width
+                    const wmWidth = width * 0.5; 
+                    const wmHeight = wmImg.height * (wmWidth / wmImg.width);
+                    
+                    // Center positioning
+                    const xPos = (width - wmWidth) / 2;
+                    const yPos = (height - wmHeight) / 2;
+                    
+                    ctx.drawImage(wmImg, xPos, yPos, wmWidth, wmHeight);
+                    ctx.globalAlpha = 1.0;
+                  
+                    resolve(canvas.toDataURL('image/jpeg', 0.6));
+                  } catch (e) {
+                    console.error("Error drawing watermark:", e);
+                    clearTimeout(timeoutId);
+                    resolve(canvas.toDataURL('image/jpeg', 0.6));
+                  }
+                };
+                wmImg.onerror = (err) => {
+                  console.error('Error loading watermark image crossOrigin', err);
+                  clearTimeout(timeoutId);
+                  resolve(canvas.toDataURL('image/jpeg', 0.6));
+                };
+                
+                const separator = watermarkData.includes('?') ? '&' : '?';
+                wmImg.src = watermarkData.startsWith('http') ? watermarkData + separator + 't=' + Date.now() : watermarkData;
+              } catch (err) {
+                 console.error('Critical error in watermark loader', err);
+                 resolve(canvas.toDataURL('image/jpeg', 0.6));
+              }
             };
-            wmImg.onerror = () => {
-              resolve(canvas.toDataURL('image/jpeg', 0.6));
-            };
-            wmImg.src = watermarkData;
+            
+            loadAndApplyWatermark();
           } else {
-            resolve(canvas.toDataURL('image/jpeg', 0.6));
+             resolve(canvas.toDataURL('image/jpeg', 0.6));
           }
         };
         img.src = e.target?.result as string;
@@ -261,7 +312,7 @@ export default function Admin() {
     const file = e.target.files?.[0];
     if (file) {
       setIsUploading(true);
-      const resized = await resizeImage(file);
+      const resized = await resizeImage(file, true);
       if (isSupabaseConfigured) {
          const fileObj = dataURLtoFile(resized, file.name);
          const url = await uploadImageToSupabase(fileObj);
@@ -283,7 +334,7 @@ export default function Admin() {
     const newGallery: string[] = [];
     for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        const resized = await resizeImage(file);
+        const resized = await resizeImage(file, true);
         
         if (isSupabaseConfigured) {
             const fileObj = dataURLtoFile(resized, file.name);

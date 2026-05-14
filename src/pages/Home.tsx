@@ -96,7 +96,7 @@ export default function Home() {
             <a href="#" className="text-sm font-medium tracking-wider uppercase hover:text-gold-500 transition-colors">Início</a>
             <a href="#venda" className="text-sm font-medium tracking-wider uppercase hover:text-gold-500 transition-colors">À Venda</a>
             <a href="#aluguel" className="text-sm font-medium tracking-wider uppercase hover:text-gold-500 transition-colors">Aluguel</a>
-            <a href="#sobre" className="text-sm font-medium tracking-wider uppercase hover:text-gold-500 transition-colors">Fabiana Santos</a>
+            <a href="#sobre" className="text-sm font-medium tracking-wider uppercase hover:text-gold-500 transition-colors">Sobre Mim</a>
             <a href="https://wa.me/5551994708494" target="_blank" rel="noopener noreferrer" className="px-6 py-2 border border-gold-500 text-gold-500 hover:bg-gold-500 hover:text-black text-sm uppercase tracking-wider transition-all duration-300">
               Fale Conosco
             </a>
@@ -125,7 +125,7 @@ export default function Home() {
               <a href="#" onClick={() => setIsMobileMenuOpen(false)} className="text-xl font-serif">Início</a>
               <a href="#venda" onClick={() => setIsMobileMenuOpen(false)} className="text-xl font-serif">À Venda</a>
               <a href="#aluguel" onClick={() => setIsMobileMenuOpen(false)} className="text-xl font-serif">Aluguel</a>
-              <a href="#sobre" onClick={() => setIsMobileMenuOpen(false)} className="text-xl font-serif">Fabiana Santos</a>
+              <a href="#sobre" onClick={() => setIsMobileMenuOpen(false)} className="text-xl font-serif">Sobre Mim</a>
               <a href="https://wa.me/5551994708494" target="_blank" rel="noopener noreferrer" onClick={() => setIsMobileMenuOpen(false)} className="text-xl font-serif text-gold-500">Fale no WhatsApp</a>
             </div>
           </motion.div>
@@ -197,7 +197,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
             <div>
-               <p className="text-gold-500 uppercase tracking-[0.2em] text-xs font-semibold mb-3">Curadoria Exclusiva</p>
+               <p className="text-gold-500 uppercase tracking-[0.2em] text-xs font-semibold mb-3">Oportunidades Imperdíveis</p>
                <h2 className="font-serif text-4xl md:text-5xl font-light">Imóveis à Venda</h2>
             </div>
           </div>
@@ -215,8 +215,8 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
             <div>
-               <p className="text-gold-500 uppercase tracking-[0.2em] text-xs font-semibold mb-3">Longa Duração</p>
-               <h2 className="font-serif text-4xl md:text-5xl font-light">Imóveis para Alocação</h2>
+               <p className="text-gold-500 uppercase tracking-[0.2em] text-xs font-semibold mb-3">Melhores Opções de Aluguel</p>
+               <h2 className="font-serif text-4xl md:text-5xl font-light">Imóveis para Locação</h2>
             </div>
           </div>
 
