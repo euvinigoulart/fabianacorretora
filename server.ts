@@ -46,12 +46,13 @@ async function startServer() {
   app.post('/api/login', (req, res) => {
     const { email, pass } = req.body;
     const db = readDb();
-    const adminEmail = db.settings.adminEmail || 'admin';
-    const adminPass = db.settings.adminPass || '1234';
+    const adminEmail = String(db.settings.adminEmail || 'admin').trim();
+    const adminPass = String(db.settings.adminPass || '1234').trim();
     
-    if (email?.trim().toLowerCase() === adminEmail.toLowerCase() && pass === adminPass) {
+    if (String(email).trim().toLowerCase() === adminEmail.toLowerCase() && String(pass).trim() === adminPass) {
       res.json({ success: true, token: 'validated' });
     } else {
+      console.log('Login failed', { reqEmail: email, reqPass: pass, adminEmail, adminPass });
       res.status(401).json({ error: 'Credenciais inválidas' });
     }
   });
